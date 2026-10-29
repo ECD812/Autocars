@@ -64,7 +64,7 @@ body {
   font: 400 16px/1.5 var(--font);
   -webkit-text-size-adjust: 100%;
   padding-top: env(safe-area-inset-top, 0px);
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 120px); /* room for the host's banner */
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 96px); /* room for the bottom menu */
 }
 .wrap {
   max-width: 560px; margin: 0 auto;
@@ -365,6 +365,75 @@ details.why p { color: var(--muted); margin: 0 0 6px; }
   body.has-report .plate-field input { height: 48px; font-size: 22px; }
 }
 
+/* tabs as separate pages */
+.panel { display: grid; gap: 14px; min-width: 0; }
+.panel[hidden] { display: none !important; }
+.title-actions { display: flex; gap: 8px; }
+.save.share { border-color: var(--line); color: var(--fg); }
+.overview-links { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.overview-links .btn-ghost { background: var(--surface); font-size: 14px; min-height: 48px; }
+
+/* summary score */
+.score { gap: 10px; }
+.score-head { display: flex; align-items: center; gap: 12px; }
+.score-badge { width: 52px; height: 52px; border-radius: 16px; display: grid; place-items: center; color: #fff; font-size: 26px; font-weight: 800; flex: none; }
+.score-badge.good { background: var(--good); } .score-badge.warn { background: var(--warn); } .score-badge.bad { background: var(--bad); }
+.score-head b { font-size: 20px; font-weight: 800; display: block; }
+.score-head span { color: var(--muted); font-size: 14px; }
+.score-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.score-list li { display: flex; gap: 8px; align-items: baseline; font-size: 15px; }
+.score-list li::before { content: ""; width: 9px; height: 9px; border-radius: 50%; flex: none; transform: translateY(-1px); }
+.score-list li.good::before { background: var(--good); } .score-list li.warn::before { background: var(--warn); } .score-list li.bad::before { background: var(--bad); }
+
+/* monthly cost */
+.cost-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.cost-inputs label { display: grid; gap: 4px; font-size: 13px; font-weight: 600; color: var(--muted); }
+.cost-inputs input[type=number] { height: 46px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2); padding: 0 12px; font: 700 17px var(--font); color: var(--fg); width: 100%; direction: ltr; text-align: right; }
+.cost-checks { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 14px; }
+.cost-checks label { display: flex; align-items: center; gap: 6px; }
+.cost-checks input { width: 18px; height: 18px; accent-color: var(--coral); }
+.cost-total { background: var(--hero); color: var(--hero-fg); border-radius: 18px; padding: 16px; display: grid; gap: 4px; }
+.cost-total span { color: var(--hero-muted); font-size: 14px; }
+.cost-total b { font-size: 34px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.cost-bar { display: flex; height: 12px; border-radius: 6px; overflow: hidden; gap: 2px; direction: ltr; }
+.cost-bar i { display: block; height: 100%; }
+.cost-rows { display: grid; }
+.cost-row { display: grid; grid-template-columns: 12px 1fr auto; gap: 10px; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
+.cost-row:last-child { border-bottom: 0; }
+.cost-row i { width: 12px; height: 12px; border-radius: 3px; }
+.cost-row b { font-variant-numeric: tabular-nums; }
+.cost-row small { color: var(--muted); display: block; font-size: 12px; }
+
+/* bottom menu */
+.bottom-nav {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  background: var(--surface); border-top: 1px solid var(--line);
+  padding: 6px max(8px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px));
+  box-shadow: 0 -4px 20px rgba(16, 20, 27, .06);
+}
+.bottom-nav button {
+  display: grid; justify-items: center; gap: 3px; padding: 6px 4px; border: 0; background: none;
+  color: var(--muted); font: 600 12px/1.2 var(--font); border-radius: 12px;
+}
+.bottom-nav button .icon { width: 24px; height: 24px; }
+.bottom-nav button.on { color: var(--fg); }
+.bottom-nav button.on .icon { color: var(--coral); }
+.bottom-nav button:disabled { opacity: .4; }
+@media (hover: hover) { .bottom-nav button:not(:disabled):hover { background: var(--surface-2); } }
+@media (min-width: 960px) {
+  .bottom-nav { left: 50%; right: auto; bottom: 16px; transform: translateX(-50%); width: 440px; border: 1px solid var(--line); border-radius: 20px; padding: 6px; }
+}
+.h-list { display: grid; gap: 8px; }
+.h-item {
+  display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 12px; text-align: right;
+  padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface);
+}
+.h-item b { font-size: 15px; font-weight: 700; }
+.h-item small { color: var(--muted); font-size: 12px; grid-column: 1; }
+.h-item .pl { grid-row: span 2; font: 700 14px/1 var(--mono); direction: ltr; background: var(--plate); color: var(--plate-ink); padding: 6px 8px; border-radius: 6px; border: 2px solid var(--plate-ink); }
+.empty { text-align: center; color: var(--muted); padding: 24px 8px; }
+
 /* section tabs */
 .jump {
   position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20;
@@ -517,6 +586,21 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
   <div id="out"></div>
   <footer class="site-foot"><a href="privacy.html">מדיניות פרטיות</a><span>·</span><span>מידע ממאגרי משרד התחבורה</span></footer>
 </main>
+
+<nav class="bottom-nav" id="bottomNav" aria-label="תפריט ראשי">
+  <button type="button" data-nav="home" class="on">
+    <svg class="icon" viewBox="0 0 24 24"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg>
+    <span>דף הבית</span>
+  </button>
+  <button type="button" data-nav="last">
+    <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+    <span>החיפוש האחרון</span>
+  </button>
+  <button type="button" data-nav="history">
+    <svg class="icon" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg>
+    <span>היסטוריה</span>
+  </button>
+</nav>
 
 <div id="sheetHost"></div>
 
@@ -778,7 +862,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
     return { mileage, recalls, recallItems, cancel, personal };
   }
 
-  function historyHTML(h) {
+  function historyHTML(h, rec) {
     const row = (state, title, sub) => `<div class="hist-row"><span class="ic ${state}" aria-hidden="true">${state === "ok" ? "✓" : state === "na" ? "?" : "!"}</span><b>${title}</b><span>${sub}</span></div>`;
     const out = [];
 
@@ -788,9 +872,20 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
     else {
       const r = h.mileage[0];
       const kmKey = pickKey(r, /kilometer|km|mad_?ochez|kilometraz/i);
-      const dtKey = pickKey(r, /_dt$|date|taarich/i);
       const km = kmKey ? Number(String(r[kmKey]).replace(/[^\d.]/g, "")) : null;
-      out.push(row("ok", km ? `${km.toLocaleString("he-IL")} ק״מ` : "קילומטראז׳ דווח", `הקילומטראז׳ האחרון שדווח בטסט${dtKey ? `, ${esc(fmtDate(val(r, dtKey)) || val(r, dtKey))}` : ""}.`));
+      // the mileage dataset has no reading date; the reading is taken at the annual test,
+      // so the date is the last test date from the vehicle record
+      const testDate = fmtDate(val(rec, "mivchan_acharon_dt"));
+      out.push(row("ok", km ? `${km.toLocaleString("he-IL")} ק״מ` : "קילומטראז׳ דווח", `הקילומטראז׳ שדווח בטסט האחרון${testDate ? `, ${esc(testDate)}` : ""}.`));
+
+      // other changes recorded in the same dataset, shown only when present
+      const flag = (re, title, sub) => {
+        const k = pickKey(r, re);
+        if (k && /^(1|true|כן|y)$/i.test(String(r[k]).trim())) out.push(row("warn", title, sub));
+      };
+      flag(/shinui_?mivne/i, "שינוי מבנה", "נרשם ברכב שינוי מבנה.");
+      flag(/gapam/i, "הוסב לגפ״מ", "הרכב הוסב להנעה בגז.");
+      flag(/shinui_?(zeva|tzeva)|zeva_ind/i, "שינוי צבע", "צבע הרכב שונה מהצבע המקורי.");
     }
 
     // recalls
@@ -1158,6 +1253,9 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
     const plate = fmtPlate(digits);
 
     addToHistory(digits, title, year);
+    currentReportPlate = digits;
+    try { localStorage.setItem("carcheck.last", digits); } catch (_) {}
+    setNav("last");
     showModelPhoto(rec, [title, year].filter(Boolean).join(" "));
 
     const mainRows = [
@@ -1183,20 +1281,27 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
         </div>
         <div class="title-row">
           <div class="plate" aria-label="מספר רישוי ${plate}"><span class="il">IL</span><span class="n">${plate}</span></div>
-          <button class="save" type="button" id="saveBtn">${svg.heart}<span>שמור</span></button>
+          <div class="title-actions">
+            <button class="save share" type="button" id="shareBtn"><svg class="icon" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg><span>שתף</span></button>
+            <button class="save" type="button" id="saveBtn">${svg.heart}<span>שמור</span></button>
+          </div>
         </div>
+        <span class="msg" id="shareMsg" role="status"></span>
       </section>
 
-      <nav class="jump" id="jump" aria-label="מעבר לחלק בדוח">
-        <button type="button" data-t="secOverview" class="on">סקירה</button>
-        <button type="button" data-t="secHistory">היסטוריה</button>
-        <button type="button" data-t="secSpec">מפרט</button>
-        <button type="button" data-t="secSafety">בטיחות</button>
-        <button type="button" data-t="secPrice">מחיר וביטוח</button>
-        <button type="button" data-t="secReviews">חוות דעת</button>
+      <nav class="jump" id="jump" role="tablist" aria-label="חלקי הדוח">
+        <button type="button" role="tab" data-t="secOverview" class="on">סקירה</button>
+        <button type="button" role="tab" data-t="secHistory">היסטוריה</button>
+        <button type="button" role="tab" data-t="secSpec">מפרט</button>
+        <button type="button" role="tab" data-t="secSafety">בטיחות</button>
+        <button type="button" role="tab" data-t="secPrice">מחיר וביטוח</button>
+        <button type="button" role="tab" data-t="secCost">עלות חודשית</button>
+        ${sb ? `<button type="button" role="tab" data-t="secReviews">חוות דעת</button>` : ""}
       </nav>
 
-      <div class="tiles" id="secOverview" data-sec>
+      <div class="panel" id="secOverview" data-sec>
+      <section class="card score" id="scoreBox"><p class="foot">מסכם את בדיקת הרכב…</p></section>
+      <div class="tiles">
         <section class="card tile">
           <span class="lbl">טסט אחרון</span>
           <span class="big" dir="ltr" style="text-align:right">${esc(test || "—")}</span>
@@ -1212,14 +1317,19 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
           <span class="lbl">מנוע</span><span class="big">…</span><span class="note">בודק</span>
         </section>
       </div>
+      <div class="overview-links">
+        <button type="button" class="btn-ghost" data-go="secHistory">היסטוריה ובעלויות</button>
+        <button type="button" class="btn-ghost" data-go="secCost">כמה זה יעלה לי בחודש?</button>
+      </div>
+      </div>
 
-      <section class="card group" id="secHistory" data-sec>
+      <section class="card group panel" id="secHistory" data-sec hidden>
         <h2 class="sec-title">היסטוריה</h2>
         <div class="block" id="ownersCard"><h3>בעלויות</h3><p class="foot">בודק בעלויות…</p></div>
         <div class="block"><h3>בדיקות</h3><div id="histBox"><p class="foot">בודק במאגרי משרד התחבורה…</p></div></div>
       </section>
 
-      <section class="card group" id="secSpec" data-sec>
+      <section class="card group panel" id="secSpec" data-sec hidden>
         <h2 class="sec-title">מפרט</h2>
         <div class="block">
           <dl class="kv">${kv(mainRows)}<dt>יבואן</dt><dd id="importerRow">…</dd><dt>מחירון יצרן (חדש)</dt><dd id="priceRow">…</dd></dl>
@@ -1230,7 +1340,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
         <div class="block" id="countCard"><h3>כמה יש בישראל</h3><p class="foot">סופר…</p></div>
       </section>
 
-      <section class="card group" id="secSafety" data-sec>
+      <section class="card group panel" id="secSafety" data-sec hidden>
         <h2 class="sec-title">בטיחות</h2>
         <div class="block">${euroNcapHTML(rec)}</div>
         ${safetyEquipHTML(val(rec, "ramat_eivzur_betihuty")) ? `<div class="block">${safetyEquipHTML(val(rec, "ramat_eivzur_betihuty"))}</div>` : ""}
@@ -1238,7 +1348,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
         ${emissionHTML(val(rec, "kvutzat_zihum"))}
       </section>
 
-      <section class="card group" id="secPrice" data-sec>
+      <section class="card group panel" id="secPrice" data-sec hidden>
         <h2 class="sec-title">מחיר וביטוח</h2>
         <div class="block" id="newPrice"><h3>מחירון יצרן</h3><p class="foot">בודק…</p></div>
         <div class="block" id="feeBox" hidden></div>
@@ -1254,7 +1364,12 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
         </div>
       </section>
 
-      <section class="card group" id="secReviews" data-sec ${sb ? "" : "hidden"}>
+      <section class="card group panel" id="secCost" data-sec hidden>
+        <h2 class="sec-title">עלות חודשית</h2>
+        <div id="costBox"><p class="foot">אוסף נתונים לחישוב…</p></div>
+      </section>
+
+      <section class="card group panel" id="secReviews" data-sec hidden>
         <h2 class="sec-title">חוות דעת</h2>
         <div id="revBox"><p class="foot">טוען חוות דעת…</p></div>
       </section>
@@ -1303,7 +1418,8 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
       const est = price ? estimateValue((price.min + price.max) / 2, rec, owners) : null;
       box.innerHTML = insuranceHTML(rec, spec, price, est ? (est.low + est.high) / 2 : null);
     });
-    Promise.all([specP, lookupEPA(rec).catch(() => null)]).then(([spec, epa]) => {
+    const epaP = lookupEPA(rec).catch(() => null);
+    Promise.all([specP, epaP]).then(([spec, epa]) => {
       const fuelTile = $("#fuelTile"), tankTile = $("#tankTile"), specCard = $("#specCard");
       if (!fuelTile) return;
       const fuel = findFuel(spec);
@@ -1355,37 +1471,29 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
       out.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
     }
 
-    // section tabs
+    // tabs: one section at a time
     const jump = $("#jump");
     const tabs = [...jump.querySelectorAll("button")];
-    const setOn = (id) => tabs.forEach((t) => {
-      const on = t.dataset.t === id;
-      t.classList.toggle("on", on);
-      if (on) {
-        const tr = t.getBoundingClientRect(), jr = jump.getBoundingClientRect();
-        jump.scrollBy({ left: tr.left - (jr.left + jr.width / 2 - tr.width / 2), behavior: "smooth" });
-      }
-    });
-    let jumping = false, jumpTimer;
-    tabs.forEach((t) => t.onclick = () => {
-      const el = document.getElementById(t.dataset.t);
-      if (!el) return;
-      jumping = true; clearTimeout(jumpTimer); jumpTimer = setTimeout(() => jumping = false, 800);
-      setOn(t.dataset.t);
-      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      el.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
-    });
-    if (window._secObserver) window._secObserver.disconnect();
-    window._secObserver = new IntersectionObserver((entries) => {
-      if (jumping) return;
-      const vis = entries.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
-      if (vis) setOn(vis.target.id);
-    }, { rootMargin: "-80px 0px -55% 0px" });
-    out.querySelectorAll("[data-sec]").forEach((el) => window._secObserver.observe(el));
+    const showTab = (id, scroll = true) => {
+      out.querySelectorAll(".panel").forEach((p) => p.hidden = p.id !== id);
+      tabs.forEach((t) => {
+        const on = t.dataset.t === id;
+        t.classList.toggle("on", on);
+        t.setAttribute("aria-selected", on ? "true" : "false");
+        if (on) {
+          const tr = t.getBoundingClientRect(), jr = jump.getBoundingClientRect();
+          jump.scrollBy({ left: tr.left - (jr.left + jr.width / 2 - tr.width / 2), behavior: smooth() });
+        }
+      });
+      if (scroll && jump.getBoundingClientRect().top < 0) jump.scrollIntoView({ behavior: smooth(), block: "start" });
+    };
+    tabs.forEach((t) => t.onclick = () => showTab(t.dataset.t));
+    out.querySelectorAll("[data-go]").forEach((b) => b.onclick = () => showTab(b.dataset.go));
 
     // vehicle history
-    lookupVehicleHistory(digits).then((h) => {
-      const box = $("#histBox"); if (box) box.innerHTML = historyHTML(h);
+    const histP = lookupVehicleHistory(digits);
+    histP.then((h) => {
+      const box = $("#histBox"); if (box) box.innerHTML = historyHTML(h, rec);
     }).catch(() => { const b = $("#histBox"); if (b) b.innerHTML = `<p class="foot">לא הצלחתי לטעון את ההיסטוריה כרגע.</p>`; });
 
     // importer list price
@@ -1466,6 +1574,32 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
     loadSafety(rec);
     currentModel = { key: `${rec.tozeret_cd ?? maker}|${val(rec, "kinuy_mishari") || val(rec, "degem_nm") || ""}`, title, year };
     loadReviews();
+
+    // summary score
+    Promise.all([ownersP.catch(() => null), histP.catch(() => null)]).then(([owners, h]) => {
+      const box = $("#scoreBox"); if (box) box.innerHTML = scoreHTML(rec, owners, h);
+    });
+
+    // monthly cost
+    Promise.all([priceP.catch(() => null), ownersP.catch(() => null), specP, epaP]).then(([price, owners, spec, epa]) => {
+      const box = $("#costBox"); if (!box) return;
+      renderCost(box, { rec, price, owners, spec, fuel: fuelOf(spec, epa) });
+    });
+
+    // share
+    const shareUrl = location.origin + location.pathname + "#" + digits;
+    try { history.replaceState(null, "", "#" + digits); } catch (_) {}
+    $("#shareBtn").onclick = async () => {
+      const text = `${title}${year ? " " + year : ""} · ${plate}: דוח רכב מלא ב-AutoCars`;
+      const msg = $("#shareMsg");
+      if (navigator.share) {
+        try { await navigator.share({ title: "AutoCars", text, url: shareUrl }); return; }
+        catch (e) { if (e && e.name === "AbortError") return; }
+      }
+      try { await navigator.clipboard.writeText(shareUrl); msg.className = "msg ok"; msg.textContent = "הקישור הועתק. אפשר להדביק אותו בכל מקום."; }
+      catch (_) { msg.className = "msg"; msg.textContent = shareUrl; }
+      window.open("https://wa.me/?text=" + encodeURIComponent(text + "\n" + shareUrl), "_blank", "noopener");
+    };
 
     // fleet counts
     countSame(rec).then((c) => {
@@ -1881,6 +2015,141 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
     loadVisits();
   }
 
+  // ---------- summary score ----------
+  function mileageOf(h) {
+    const r = h && h.mileage && h.mileage[0];
+    if (!r) return null;
+    const k = pickKey(r, /kilometer|km|mad_?ochez|kilometraz/i);
+    const km = k ? Number(String(r[k]).replace(/[^\d.]/g, "")) : null;
+    return km > 0 ? km : null;
+  }
+  function carAgeYears(rec) {
+    const m = String(rec.moed_aliya_lakvish || "").match(/^(\d{4})-(\d{1,2})/);
+    const start = m ? new Date(+m[1], +m[2] - 1, 1) : rec.shnat_yitzur ? new Date(+rec.shnat_yitzur, 6, 1) : null;
+    return start ? Math.max(0, (Date.now() - start.getTime()) / (365.25 * 864e5)) : null;
+  }
+
+  function scoreHTML(rec, owners, h) {
+    const items = [];
+    const until = toDate(val(rec, "tokef_dt"));
+    if (until && until < new Date()) items.push(["bad", "רישיון הרכב פג תוקף"]);
+    else if (until) items.push(["good", "רישיון בתוקף"]);
+    if (h && h.cancel && h.cancel.length) items.push(["bad", "הרכב בוטל סופית וירד מהכביש"]);
+    if (h && h.recalls && h.recalls.length) items.push(["warn", h.recalls.length === 1 ? "ריקול פתוח שלא בוצע" : `${h.recalls.length} ריקולים פתוחים שלא בוצעו`]);
+    else if (h && h.recalls) items.push(["good", "אין ריקולים פתוחים"]);
+    if (owners && owners.length) {
+      const n = owners.length;
+      if (n >= 4) items.push(["warn", `יד ${n}, הרבה בעלים`]);
+      else if (n <= 2) items.push(["good", `יד ${n}`]);
+      if (owners.some((o) => /ליסינג|השכרה/.test(o.type))) items.push(["warn", "עבר ליסינג או השכרה"]);
+    }
+    const km = mileageOf(h), age = carAgeYears(rec);
+    if (km && age && age >= 1) {
+      const perYear = Math.round(km / age / 1000) * 1000;
+      if (perYear > 22000) items.push(["warn", `נסע בממוצע ${perYear.toLocaleString("he-IL")} ק״מ בשנה, יותר מהרגיל`]);
+      else if (perYear < 12000) items.push(["good", `קילומטראז׳ נמוך, כ-${perYear.toLocaleString("he-IL")} ק״מ בשנה`]);
+      else items.push(["good", `קילומטראז׳ רגיל, כ-${perYear.toLocaleString("he-IL")} ק״מ בשנה`]);
+    }
+    const r0 = h && h.mileage && h.mileage[0];
+    if (r0) {
+      const flag = (re) => { const k = pickKey(r0, re); return k && /^(1|true|כן|y)$/i.test(String(r0[k]).trim()); };
+      if (flag(/shinui_?mivne/i)) items.push(["warn", "נרשם שינוי מבנה"]);
+      if (flag(/gapam/i)) items.push(["warn", "הוסב לגפ״מ"]);
+    }
+    if (h && h.personal && h.personal.length) items.push(["warn", "יבוא אישי"]);
+    const eu = findEuroNcap(rec);
+    if (eu && eu.stars <= 3) items.push(["warn", `בטיחות נמוכה: ${eu.stars} כוכבים ב-Euro NCAP`]);
+    else if (eu && eu.stars === 5) items.push(["good", "5 כוכבי בטיחות ב-Euro NCAP"]);
+
+    const bad = items.filter((i) => i[0] === "bad").length, warn = items.filter((i) => i[0] === "warn").length;
+    const [cls, mark, head, sub] = bad ? ["bad", "✕", "דורש בדיקה רצינית", "נמצאו בעיות משמעותיות"]
+      : warn >= 2 ? ["warn", "!", "שימו לב לכמה דברים", "כדאי לבדוק את הנקודות האלה לפני קנייה"]
+      : warn === 1 ? ["warn", "!", "נראה טוב, עם הסתייגות", "יש נקודה אחת שכדאי לבדוק"]
+      : ["good", "✓", "נראה טוב", "לא נמצאו סימני אזהרה במאגרים"];
+    const order = { bad: 0, warn: 1, good: 2 };
+    items.sort((a, b) => order[a[0]] - order[b[0]]);
+    return `
+      <div class="score-head"><span class="score-badge ${cls}" aria-hidden="true">${mark}</span><div><b>${head}</b><span>${sub}</span></div></div>
+      ${items.length ? `<ul class="score-list">${items.slice(0, 7).map(([c, t]) => `<li class="${c}">${esc(t)}</li>`).join("")}</ul>` : ""}
+      <p class="foot">סיכום אוטומטי לפי מאגרי משרד התחבורה. לפני קנייה מומלץ גם לבדוק את הרכב במכון.</p>`;
+  }
+
+  // ---------- monthly cost ----------
+  const FUEL_PRICE = 7.35;    // בנזין 95, שירות עצמי, מ-1.11.2026
+  const KWH_PRICE = 0.64;     // תעריף ביתי כולל מע״מ, מ-1.7.2026
+  function fuelOf(spec, epa) {
+    const f = findFuel(spec);
+    const main = f.find((x) => x.where === "משולב") || f[0];
+    if (main) {
+      const v = parseFloat(main.value);
+      if (v > 0) return (/100/.test(main.unit) || v < 10) ? { kml: +(100 / v).toFixed(1), src: "נתוני יצרן" } : { kml: v, src: "נתוני יצרן" };
+    }
+    if (epa && epa.ev && epa.kwh100) return { kwh100: +epa.kwh100, src: "מבחני EPA" };
+    if (epa && epa.kml) return { kml: +epa.kml, src: "מבחני EPA" };
+    return null;
+  }
+
+  function renderCost(box, st) {
+    const { rec, price, owners, spec, fuel } = st;
+    const fuelName = val(rec, "sug_delek_nm") || "";
+    const ev = (fuel && fuel.kwh100) || (/חשמל/.test(fuelName) && !/היברי|פלאג/.test(fuelName));
+    const age = carAgeYears(rec) || 0;
+    const newPrice = price ? (price.min + price.max) / 2 : null;
+    const est = newPrice ? estimateValue(newPrice, rec, owners) : null;
+    const value = est ? (est.low + est.high) / 2 : null;
+    const fee = newPrice ? licenseFee(newPrice, val(rec, "shnat_yitzur")) : null;
+    const cc = spec ? Number(val(spec, "nefah_manoa")) || null : null;
+    const hovaMid = cc && cc <= 1300 ? 1470 : 1640;
+    const comp = COMP_TYPES[carType(rec, spec, newPrice)];
+    const maintDefault = age < 3 ? 150 : age < 7 ? 250 : 350;
+    const effDefault = ev ? (fuel && fuel.kwh100) || 16 : (fuel && fuel.kml) || 14;
+
+    box.innerHTML = `
+      <div class="cost-total" aria-live="polite"><span>עלות משוערת לחודש</span><b id="costTotal" dir="ltr" style="text-align:right">—</b><span id="costYear"></span></div>
+      <div class="cost-bar" id="costBar" aria-hidden="true"></div>
+      <div class="cost-rows" id="costRows"></div>
+      <div class="block" style="border-top:1px solid var(--line)">
+        <h3>התאימו לנסיעה שלכם</h3>
+        <div class="cost-inputs">
+          <label for="cKm">ק״מ בחודש<input id="cKm" type="number" inputmode="numeric" min="0" step="50" value="1250"></label>
+          <label for="cEff">${ev ? "צריכה: קוט״ש ל-100 ק״מ" : "צריכה: ק״מ לליטר"}<input id="cEff" type="number" inputmode="decimal" min="1" step="0.1" value="${effDefault}"></label>
+          <label for="cPrice">${ev ? "מחיר קוט״ש (₪)" : "מחיר ליטר (₪)"}<input id="cPrice" type="number" inputmode="decimal" min="0" step="0.01" value="${ev ? KWH_PRICE : FUEL_PRICE}"></label>
+          <label for="cMaint">טיפולים ותיקונים בחודש (₪)<input id="cMaint" type="number" inputmode="numeric" min="0" step="10" value="${maintDefault}"></label>
+        </div>
+        <div class="cost-checks">
+          <label for="cComp"><input id="cComp" type="checkbox" checked>כולל ביטוח מקיף</label>
+          ${value ? `<label for="cDep"><input id="cDep" type="checkbox" checked>כולל ירידת ערך</label>` : ""}
+        </div>
+      </div>
+      <details class="why"><summary>איך זה מחושב?</summary>
+        <p><b>${ev ? "חשמל" : "דלק"}:</b> ${fuel ? `צריכה לפי ${fuel.src}` : "צריכה ממוצעת, כי לא נמצא נתון לדגם"}. ${ev ? `מחיר קוט״ש לפי התעריף הביתי מ-1.7.2026.` : `מחיר ליטר בנזין 95 בשירות עצמי מ-1.11.2026. מחיר הדלק משתנה, אפשר לעדכן אותו.`}</p>
+        <p><b>ביטוח:</b> חובה לפי המחשבון של רשות שוק ההון, ומקיף לפי ממוצע שוק ל${comp.name}, לנהג מעל גיל 30.</p>
+        <p><b>אגרת רישוי:</b> ${fee ? `קבוצת מחיר ${fee.group}, כולל אגרת רדיו.` : "לא נמצא מחירון, לכן לא נכללה."}</p>
+        <p><b>טיפולים ותיקונים:</b> הערכה גסה לפי גיל הרכב. כדאי לעדכן לפי מה שאתם יודעים.</p>
+        ${value ? `<p><b>ירידת ערך:</b> כמה ערך הרכב צפוי לרדת בשנה הקרובה, לפי הערכת השווי.</p>` : ""}
+      </details>`;
+
+    const COLORS = { fuel: "var(--coral)", ins: "var(--il)", fee: "var(--muted)", maint: "var(--warn)", dep: "var(--line)" };
+    const num = (id) => { const v = parseFloat($(id)?.value); return Number.isFinite(v) && v >= 0 ? v : 0; };
+    const calc = () => {
+      const km = num("#cKm"), eff = num("#cEff") || 1, unit = num("#cPrice");
+      const rows = [
+        ["fuel", ev ? "חשמל" : "דלק", ev ? km * eff / 100 * unit : km / eff * unit, ev ? `${km.toLocaleString("he-IL")} ק״מ · ${eff} קוט״ש ל-100 ק״מ` : `${km.toLocaleString("he-IL")} ק״מ · ${eff} ק״מ לליטר`],
+        ["ins", "ביטוח", (hovaMid + ($("#cComp")?.checked ? comp.avg : 0)) / 12, $("#cComp")?.checked ? "חובה ומקיף" : "חובה בלבד"],
+        ["fee", "אגרת רישוי", fee ? fee.total / 12 : 0, fee ? `${ils(fee.total)} בשנה` : "אין נתון"],
+        ["maint", "טיפולים ותיקונים", num("#cMaint"), "הערכה"],
+      ];
+      if (value && $("#cDep")?.checked) rows.push(["dep", "ירידת ערך", value * DEPRECIATION(Math.floor(age)) / 12, "הערך שהרכב מאבד"]);
+      const total = rows.reduce((a, r) => a + r[2], 0);
+      $("#costTotal").textContent = ils(Math.round(total / 10) * 10);
+      $("#costYear").textContent = `כ-${ils(Math.round(total * 12 / 100) * 100)} בשנה`;
+      $("#costBar").innerHTML = rows.filter((r) => r[2] > 0).map((r) => `<i style="flex:${r[2].toFixed(1)};background:${COLORS[r[0]]}"></i>`).join("");
+      $("#costRows").innerHTML = rows.map((r) => `<div class="cost-row"><i style="background:${COLORS[r[0]]}"></i><span>${r[1]}<small>${esc(r[3])}</small></span><b dir="ltr">${ils(Math.round(r[2]))}</b></div>`).join("");
+    };
+    box.querySelectorAll("input").forEach((i) => i.addEventListener("input", calc));
+    calc();
+  }
+
   // ---------- sheets ----------
   function openSheet(html, wide = false) {
     const host = $("#sheetHost");
@@ -1956,6 +2225,109 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
       currentPhoto = null; $("#plateInput").value = fmtPlate(b.dataset.d); searchCandidates([b.dataset.d]);
     });
   }
+  // ---------- bottom menu ----------
+  let currentReportPlate = null;
+  function setNav(which) {
+    document.querySelectorAll("#bottomNav button").forEach((b) => b.classList.toggle("on", b.dataset.nav === which));
+    const last = lastPlate();
+    $('#bottomNav [data-nav="last"]').disabled = !last;
+  }
+  function lastPlate() {
+    let d = null;
+    try { d = localStorage.getItem("carcheck.last"); } catch (_) {}
+    return d || items()[0]?.plate || null;
+  }
+  const smooth = () => (window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth");
+
+  function goHome() {
+    closeSheet();
+    out.innerHTML = "";
+    currentReportPlate = null;
+    currentPhoto = null;
+    document.body.classList.remove("has-report");
+    $("#modelPhoto").hidden = true;
+    $("#plateInput").value = "";
+    try { history.replaceState(null, "", location.pathname); } catch (_) {}
+    window.scrollTo({ top: 0, behavior: smooth() });
+    setNav("home");
+  }
+
+  function goLast() {
+    closeSheet();
+    const d = lastPlate();
+    if (!d) return;
+    if (currentReportPlate === d && out.children.length) {
+      out.scrollIntoView({ behavior: smooth(), block: "start" });
+      setNav("last");
+      return;
+    }
+    currentPhoto = null;
+    $("#plateInput").value = fmtPlate(d);
+    searchCandidates([d]);
+  }
+
+  function relDate(iso) {
+    if (!iso) return "";
+    const d = new Date(iso), days = Math.floor((Date.now() - d.getTime()) / 864e5);
+    if (days <= 0) return "היום";
+    if (days === 1) return "אתמול";
+    if (days < 7) return `לפני ${days} ימים`;
+    return d.toLocaleDateString("he-IL");
+  }
+
+  function openHistorySheet(mode = "all") {
+    const all = items();
+    const saved = all.filter((i) => i.saved);
+    const list = mode === "saved" ? saved : all;
+    openSheet(`
+      <h2>היסטוריה</h2>
+      <div class="seg" role="tablist">
+        <button type="button" id="hAll" class="${mode === "all" ? "on" : ""}">כל החיפושים (${all.length})</button>
+        <button type="button" id="hSaved" class="${mode === "saved" ? "on" : ""}">שמורים (${saved.length})</button>
+      </div>
+      ${list.length
+        ? `<div class="h-list">${list.map((h) => `
+            <button type="button" class="h-item" data-d="${esc(h.plate)}">
+              <b>${h.saved ? "♥ " : ""}${esc(h.title || "רכב")}${h.year ? " " + esc(h.year) : ""}</b>
+              <span class="pl">${fmtPlate(h.plate)}</span>
+              <small>${relDate(h.searched_at)}</small>
+            </button>`).join("")}</div>`
+        : `<p class="empty">${mode === "saved" ? "עוד לא שמרת רכבים. לחצו על הלב בדוח כדי לשמור." : "עוד לא חיפשת רכבים."}</p>`}
+      ${!session && sb ? `<p class="foot" style="text-align:center">ההיסטוריה שמורה במכשיר הזה. <a href="#" id="hLogin" style="color:var(--il)">התחברו</a> כדי לראות אותה מכל מכשיר.</p>` : ""}
+      ${mode === "all" && all.length > saved.length ? `<button class="textbtn" type="button" id="hClear">נקה היסטוריה (הרכבים השמורים יישארו)</button>` : ""}
+      <button class="textbtn" type="button" data-close>סגור</button>`, true);
+    $("#hAll").onclick = () => openHistorySheet("all");
+    $("#hSaved").onclick = () => openHistorySheet("saved");
+    document.querySelectorAll(".h-item").forEach((b) => b.onclick = () => {
+      closeSheet();
+      currentPhoto = null;
+      $("#plateInput").value = fmtPlate(b.dataset.d);
+      searchCandidates([b.dataset.d]);
+    });
+    const login = $("#hLogin");
+    if (login) login.onclick = (e) => { e.preventDefault(); openLogin(); };
+    const clear = $("#hClear");
+    if (clear) clear.onclick = async () => {
+      if (clear.dataset.sure !== "1") { clear.dataset.sure = "1"; clear.textContent = "בטוח? לחצו שוב לניקוי"; return; }
+      if (session) {
+        const { error } = await sb.from("car_history").delete().eq("saved", false);
+        if (!error) cloud = cloud.filter((c) => c.saved);
+      } else {
+        saveLocal(loadLocal().filter((i) => i.saved));
+      }
+      try { localStorage.removeItem("carcheck.last"); } catch (_) {}
+      renderHistory();
+      setNav(currentReportPlate ? "last" : "home");
+      openHistorySheet("all");
+    };
+  }
+
+  document.querySelectorAll("#bottomNav button").forEach((b) => b.onclick = () => {
+    if (b.dataset.nav === "home") goHome();
+    else if (b.dataset.nav === "last") goLast();
+    else openHistorySheet();
+  });
+
   $("#historyAction").onclick = () => { historyMode = historyMode === "saved" ? "recent" : "saved"; renderHistory(); };
 
   function paintAccount() {
@@ -2116,6 +2488,9 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
   };
   paintAccount();
   renderHistory();
+  setNav("home");
+  const shared = location.hash.match(/^#(\d{5,8})$/);
+  if (shared) { $("#plateInput").value = fmtPlate(shared[1]); searchCandidates([shared[1]]); }
   if ("serviceWorker" in navigator && location.protocol === "https:") {
     navigator.serviceWorker.register("sw.js").catch(() => {});
   }

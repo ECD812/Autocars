@@ -304,6 +304,19 @@ input[type=file] { display: none; }
 .scroll-x { overflow-x: auto; }
 @media (min-width: 640px) { .stat-grid { grid-template-columns: repeat(5, 1fr); } }
 
+/* price chart */
+.chart-wrap { direction: ltr; margin-top: 8px; }
+.chart-wrap svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart-wrap .grid { stroke: var(--line); stroke-width: 1; }
+.chart-wrap .axis { fill: var(--muted); font: 500 13px var(--font); }
+.chart-wrap .area { fill: var(--coral); opacity: .12; }
+.chart-wrap .line { fill: none; stroke: var(--coral); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+.chart-wrap .dot { fill: var(--surface); stroke: var(--coral); stroke-width: 2; }
+.chart-wrap .dot.me { fill: var(--coral); stroke: var(--surface); stroke-width: 2.5; }
+.chart-wrap .lbl { fill: var(--fg); font: 800 14px var(--font); }
+.chart-pick { direction: rtl; display: flex; justify-content: space-between; gap: 10px; font-size: 14px; margin-top: 6px; }
+.chart-pick b { font-variant-numeric: tabular-nums; }
+
 /* section tabs */
 .jump {
   position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20;
@@ -474,6 +487,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
   const API = "https://data.gov.il/api/3/action/";
   const RES_VEHICLES = "053cea08-09bc-40ec-8f7a-156f0677aff3";
   const RES_WLTP = "142afde2-6228-49f9-8a29-9b6c3a0cbe40";
+  const RES_PRICES = "39f455bf-6db0-4926-859d-017f34eacbcb"; // מחירוני יבואנים לרכב חדש
   let RES_OWNERS = "bb2355dc-9ec7-4f06-9c3f-3344672171da";
   let ownersChecked = false;
 
@@ -605,6 +619,117 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
       jobs.push(ds(RES_VEHICLES, { filters: { tozeret_cd: rec.tozeret_cd, kinuy_mishari: rec.kinuy_mishari }, limit: 0 }).then((r) => o.family = r.total).catch(() => {}));
     await Promise.all(jobs);
     return o;
+  }
+
+  // ---------- importer list price for a new car ----------
+  async function lookupNewPrice(rec) {
+    if (rec.tozeret_cd == null || rec.degem_cd == null) return null;
+    const base = { tozeret_cd: rec.tozeret_cd, degem_cd: rec.degem_cd };
+    let exact = true;
+    let r = rec.shnat_yitzur != null
+      ? await ds(RES_PRICES, { filters: { ...base, shnat_yitzur: rec.shnat_yitzur }, limit: 20 }).catch(() => null)
+      : null;
+    if (!r || !r.records.length) { exact = false; r = await ds(RES_PRICES, { filters: base, limit: 100 }).catch(() => null); }
+    const recs = (r?.records || []).filter((x) => Number(x.mehir) > 0);
+    if (!recs.length) return null;
+    let pool = recs;
+    if (!exact) {
+      const y = Number(rec.shnat_yitzur) || 0;
+      const best = recs.reduce((a, b) => Math.abs(Number(b.shnat_yitzur) - y) < Math.abs(Number(a.shnat_yitzur) - y) ? b : a);
+      pool = recs.filter((x) => String(x.shnat_yitzur) === String(best.shnat_yitzur));
+    }
+    const prices = [...new Set(pool.map((x) => Number(x.mehir)))].sort((a, b) => a - b);
+    return { min: prices[0], max: prices[prices.length - 1], year: pool[0].shnat_yitzur, exact, importer: val(pool[0], "shem_yevuan") };
+  }
+  const ils = (n) => "₪" + Number(n).toLocaleString("he-IL");
+
+  // rough value today: list price minus average depreciation, adjusted for owners
+  const DEPRECIATION = (i) => i < 1 ? 0.12 : i < 5 ? 0.08 : 0.06;
+  function estimateValue(newPrice, rec, owners) {
+    const m = String(rec.moed_aliya_lakvish || "").match(/^(\d{4})-(\d{1,2})/);
+    const start = m ? new Date(+m[1], +m[2] - 1, 1) : rec.shnat_yitzur ? new Date(+rec.shnat_yitzur, 6, 1) : null;
+    if (!start || !newPrice) return null;
+    const years = Math.max(0, (Date.now() - start.getTime()) / (365.25 * 864e5));
+    let v = newPrice;
+    const whole = Math.floor(years);
+    for (let i = 0; i < whole; i++) v *= 1 - DEPRECIATION(i);
+    v *= 1 - DEPRECIATION(whole) * (years - whole);
+    const adj = [];
+    const hands = owners && owners.length ? owners.length : null;
+    if (hands > 1) {
+      const f = Math.min(0.15, (hands - 1) * 0.03);
+      v *= 1 - f; adj.push(`יד ${hands}: פחות ${Math.round(f * 100)}%`);
+    }
+    if (owners && owners.some((o) => /ליסינג|השכרה|חברה/.test(o.type))) { v *= 0.95; adj.push("עבר ליסינג, השכרה או חברה: פחות 5%"); }
+    v = Math.max(v, newPrice * 0.08);
+    const r500 = (x) => Math.round(x / 500) * 500;
+    return { low: r500(v * 0.88), high: r500(v * 1.12), years, adj };
+  }
+
+  // importer of the brand, used when the exact model has no price-list entry
+  async function lookupBrandImporter(rec) {
+    if (rec.tozeret_cd == null) return null;
+    const r = await ds(RES_PRICES, { filters: { tozeret_cd: rec.tozeret_cd }, limit: 50 }).catch(() => null);
+    const names = (r?.records || []).map((x) => val(x, "shem_yevuan")).filter(Boolean);
+    if (!names.length) return null;
+    const count = names.reduce((m, n) => m.set(n, (m.get(n) || 0) + 1), new Map());
+    return [...count.entries()].sort((a, b) => b[1] - a[1])[0][0];
+  }
+
+  // list price of the same model across model years
+  async function lookupPriceHistory(rec) {
+    if (rec.tozeret_cd == null || rec.kinuy_mishari == null) return null;
+    const r = await ds(RES_PRICES, { filters: { tozeret_cd: rec.tozeret_cd, kinuy_mishari: rec.kinuy_mishari }, limit: 1000 }).catch(() => null);
+    const recs = (r?.records || []).filter((x) => Number(x.mehir) > 0 && Number(x.shnat_yitzur) > 1990);
+    if (!recs.length) return null;
+    const by = new Map();
+    for (const x of recs) {
+      const y = Number(x.shnat_yitzur);
+      if (!by.has(y)) by.set(y, []);
+      by.get(y).push(Number(x.mehir));
+    }
+    return [...by.entries()].sort((a, b) => a[0] - b[0]).map(([year, list]) => {
+      const v = [...list].sort((a, b) => a - b);
+      return { year, min: v[0], max: v[v.length - 1], med: v[Math.floor(v.length / 2)], n: new Set(v).size };
+    });
+  }
+
+  function niceStep(range, count) {
+    const raw = range / Math.max(1, count);
+    const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const f = raw / mag;
+    return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * mag;
+  }
+  const kILS = (n) => n >= 1e6 ? `₪${(n / 1e6).toFixed(n % 1e6 ? 1 : 0)}M` : `₪${Math.round(n / 1000)}K`;
+
+  function priceChartHTML(points, carYear) {
+    const W = 420, H = 230, L = 50, R = 12, T = 20, B = 30;
+    const xs = points.map((p) => p.year), ys = points.flatMap((p) => [p.min, p.max]);
+    const x0 = Math.min(...xs), x1 = Math.max(...xs);
+    const step = niceStep(Math.max(...ys) - Math.min(...ys) || Math.max(...ys) * 0.2, 4);
+    const y0 = Math.floor(Math.min(...ys) * 0.97 / step) * step;
+    const y1 = Math.ceil(Math.max(...ys) * 1.03 / step) * step;
+    const X = (v) => x1 === x0 ? (L + W - R) / 2 : L + (v - x0) / (x1 - x0) * (W - L - R);
+    const Y = (v) => T + (1 - (v - y0) / (y1 - y0)) * (H - T - B);
+    let grid = "";
+    for (let v = y0; v <= y1 + 1; v += step) {
+      grid += `<line class="grid" x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}"/><text class="axis" x="${L - 8}" y="${Y(v) + 4}" text-anchor="end">${kILS(v)}</text>`;
+    }
+    // year labels: always first, last and the car's year; others only where they fit
+    const must = new Set([x0, x1, carYear]);
+    const placed = [];
+    const fits = (x) => placed.every((px) => Math.abs(px - x) >= 44);
+    for (const yv of [...must].filter((v) => xs.includes(v))) placed.push(X(yv));
+    const yearsShown = new Set([...must].filter((v) => xs.includes(v)));
+    for (const p of points) { const x = X(p.year); if (!yearsShown.has(p.year) && fits(x)) { placed.push(x); yearsShown.add(p.year); } }
+    const xt = points.filter((p) => yearsShown.has(p.year))
+      .map((p) => `<text class="axis" x="${X(p.year)}" y="${H - 8}" text-anchor="middle"${p.year === carYear ? ' style="fill:var(--fg);font-weight:700"' : ""}>${p.year}</text>`).join("");
+    const line = points.map((p, i) => `${i ? "L" : "M"}${X(p.year).toFixed(1)},${Y(p.med).toFixed(1)}`).join("");
+    const area = `${line}L${X(x1).toFixed(1)},${Y(y0)}L${X(x0).toFixed(1)},${Y(y0)}Z`;
+    const dots = points.map((p) => `<circle class="dot${p.year === carYear ? " me" : ""}" data-y="${p.year}" cx="${X(p.year).toFixed(1)}" cy="${Y(p.med).toFixed(1)}" r="${p.year === carYear ? 6.5 : 4.5}"><title>${p.year}: ${ils(p.med)}</title></circle>`).join("");
+    const me = points.find((p) => p.year === carYear);
+    const meLbl = me ? `<text class="lbl" x="${Math.min(Math.max(X(me.year), L + 34), W - R - 34)}" y="${Y(me.med) - 12}" text-anchor="middle">${kILS(me.med)}</text>` : "";
+    return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="מחיר מחירון לפי שנת דגם">${grid}${xt}<path class="area" d="${area}"/><path class="line" d="${line}"/>${dots}${meLbl}</svg>`;
   }
 
   // ---------- manufacturer specs (WLTP dataset) ----------
@@ -886,6 +1011,9 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
         <h3>פרטי הרכב</h3>
         <dl class="kv">
           ${rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}
+          ${rec.degem_cd != null ? `<dt>קוד דגם (משרד התחבורה)</dt><dd><span dir="ltr">${esc(rec.tozeret_cd ?? "")}-${esc(rec.degem_cd)}${rec.sug_degem ? "-" + esc(rec.sug_degem) : ""}</span></dd>` : ""}
+          <dt>יבואן</dt><dd id="importerRow">…</dd>
+          <dt>מחירון יצרן (חדש)</dt><dd id="priceRow">…</dd>
           ${vin ? `<dt>מספר שלדה</dt><dd>${vin}</dd>` : ""}
         </dl>
       </section>
@@ -913,7 +1041,11 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
       </section>
 
       <section class="card" id="secPrice" data-sec>
-        <h3>מחיר בשוק כרגע</h3>
+        <h3>מחיר</h3>
+        <div id="newPrice"><p class="foot">בודק מחירון יצרן…</p></div>
+        <div id="estValue"></div>
+        <div id="priceChart"></div>
+        <p class="subhead">מחיר בשוק כרגע</p>
         <div class="links">
           <a href="${google(`site:yad2.co.il ${title} ${year || ""}`)}" target="_blank" rel="noopener">מודעות למכירה ביד2</a>
           <a href="${google(`מחירון לוי יצחק ${title} ${year || ""}`)}" target="_blank" rel="noopener">מחירון לוי יצחק</a>
@@ -939,7 +1071,9 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
     if (vinBtn) vinBtn.onclick = openPaywall;
 
     // ownership
-    lookupOwners(digits).then((list) => {
+    const ownersP = lookupOwners(digits);
+    const priceP = lookupNewPrice(rec);
+    ownersP.then((list) => {
       const tile = $("#handTile"); if (!tile) return;
       if (list && list.length) {
         tile.innerHTML = `<span class="lbl">יד</span><span class="big">${list.length}</span><span class="note">לפי רשומות הבעלות</span>`;
@@ -1035,6 +1169,66 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
       if (vis) setOn(vis.target.id);
     }, { rootMargin: "-80px 0px -55% 0px" });
     out.querySelectorAll("[data-sec]").forEach((el) => window._secObserver.observe(el));
+
+    // importer list price
+    priceP.then((p) => {
+      const box = $("#newPrice"), row = $("#priceRow");
+      if (!box) return;
+      const impRow = $("#importerRow");
+      if (impRow) {
+        if (p && p.importer) impRow.textContent = p.importer;
+        else lookupBrandImporter(rec).then((n) => { const r2 = $("#importerRow"); if (r2) r2.textContent = n ? `${n} (יבואן המותג)` : "אין נתון"; });
+      }
+      if (!p) {
+        box.innerHTML = `<p class="foot">אין מחירון יצרן לדגם הזה במאגר משרד התחבורה.</p>`;
+        if (row) row.textContent = "אין נתון";
+        return;
+      }
+      const price = p.min === p.max ? ils(p.min) : `${ils(p.min)}–${ils(p.max)}`;
+      if (row) row.textContent = price;
+      box.innerHTML = `
+        <div class="safe-big"><b class="num" dir="ltr" style="font-size:32px">${price}</b></div>
+        <p class="foot">מחיר מחירון של היבואן לרכב חדש, דגם שנת ${esc(p.year)}${p.exact ? "" : " (השנה הקרובה ביותר שנמצאה)"}${p.importer ? ` · יבואן: ${esc(p.importer)}` : ""}.${p.min !== p.max ? " יש כמה מחירים כי היבואן עדכן מחיר במהלך השנה." : ""}</p>`;
+    }).catch(() => {
+      const box = $("#newPrice"); if (box) box.innerHTML = `<p class="foot">לא הצלחתי לטעון את מחירון היצרן.</p>`;
+      const row = $("#priceRow"); if (row) row.textContent = "—";
+      const imp = $("#importerRow"); if (imp) imp.textContent = "—";
+    });
+
+    // estimated value today
+    Promise.all([priceP.catch(() => null), ownersP.catch(() => null)]).then(([p, owners]) => {
+      const box = $("#estValue"); if (!box) return;
+      if (!p) { box.innerHTML = ""; return; }
+      const base = (p.min + p.max) / 2;
+      const e = estimateValue(base, rec, owners);
+      if (!e) { box.innerHTML = ""; return; }
+      box.innerHTML = `
+        <div class="rev-form" style="margin-top:10px;gap:6px">
+          <span class="subhead" style="margin:0">הערכת שווי היום</span>
+          <b class="num" dir="ltr" style="font-size:28px;font-weight:800;text-align:right">${ils(e.low)}–${ils(e.high)}</b>
+          <p class="foot">חישוב לפי מחירון חדש של ${ils(Math.round(base))}, גיל ${e.years.toFixed(1)} שנים על הכביש, וירידת ערך ממוצעת: 12% בשנה הראשונה, 8% בשנים 2 עד 5, ו-6% בכל שנה אחר כך.${e.adj.length ? " התאמות: " + e.adj.join(", ") + "." : ""}</p>
+          <p class="foot"><b>זו הערכה בלבד ולא מחיר שוק.</b> המחיר בפועל תלוי בקילומטראז׳, במצב הרכב, בתאונות ובביקוש לדגם.</p>
+        </div>`;
+    });
+
+    // list-price history chart
+    lookupPriceHistory(rec).then((pts) => {
+      const box = $("#priceChart"); if (!box) return;
+      if (!pts || pts.length < 2) { box.innerHTML = ""; return; }
+      const carYear = Number(val(rec, "shnat_yitzur"));
+      const first = pts[0], last = pts[pts.length - 1];
+      const change = Math.round((last.med / first.med - 1) * 100);
+      box.innerHTML = `
+        <p class="subhead">מחיר מחירון של ${esc(title)} לפי שנת דגם</p>
+        <div class="chart-wrap">${priceChartHTML(pts, carYear)}</div>
+        <div class="chart-pick" id="chartPick"><span>${first.year}–${last.year}</span><b>${change >= 0 ? "עלייה" : "ירידה"} של ${Math.abs(change)}% במחירון</b></div>
+        <p class="foot">מחיר רכב חדש מכל שנת דגם, לפי מחירוני היבואנים במשרד התחבורה. הנקודה המלאה היא שנת הרכב שלך. לחצו על נקודה כדי לראות את המחיר.</p>`;
+      box.querySelectorAll(".dot").forEach((d) => d.addEventListener("click", () => {
+        const p = pts.find((x) => String(x.year) === d.dataset.y);
+        if (!p) return;
+        $("#chartPick").innerHTML = `<span>דגם ${p.year}</span><b>${p.min === p.max ? ils(p.min) : `${ils(p.min)}–${ils(p.max)}`}</b>`;
+      }));
+    }).catch(() => { const b = $("#priceChart"); if (b) b.innerHTML = ""; });
 
     // safety stars + reviews
     loadSafety(rec);

@@ -243,6 +243,64 @@ input[type=file] { display: none; }
 .links a::after { content: "↖"; color: var(--muted); }
 .foot { color: var(--muted); font-size: 12px; }
 
+/* stars, safety, reviews, admin */
+:root { --star: #e3a400; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --star: #ffcc33; } }
+:root[data-theme="dark"] { --star: #ffcc33; }
+.stars { display: inline-flex; gap: 2px; direction: ltr; font-size: 20px; line-height: 1; letter-spacing: 0; }
+.stars i { font-style: normal; color: var(--line); }
+.stars i.on { color: var(--star); }
+.stars.sm { font-size: 15px; }
+.safe-big { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.safe-big b { font-size: 30px; font-weight: 800; line-height: 1; }
+.safe-big .stars { font-size: 28px; }
+.safe-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
+.safe-row:last-child { border-bottom: 0; }
+.safe-row span { color: var(--muted); }
+.lvl { display: grid; grid-template-columns: repeat(8, 1fr); gap: 3px; margin: 6px 0 2px; }
+.lvl i { height: 10px; border-radius: 3px; background: var(--line); }
+.lvl i.on { background: var(--good); }
+.subhead { font-size: 14px; font-weight: 700; margin-top: 10px; }
+
+.rev-sum { display: flex; align-items: center; gap: 14px; }
+.rev-sum b { font-size: 40px; font-weight: 800; line-height: 1; }
+.rev-form { display: grid; gap: 10px; background: var(--surface-2); border-radius: 14px; padding: 14px; margin-top: 6px; }
+.pick { display: flex; gap: 4px; direction: ltr; justify-content: flex-end; }
+.pick button { border: 0; background: none; font-size: 30px; line-height: 1; color: var(--line); padding: 2px; }
+.pick button.on { color: var(--star); }
+.rev-form textarea {
+  width: 100%; min-height: 90px; resize: vertical; border-radius: 12px; border: 1px solid var(--line);
+  background: var(--surface); padding: 10px 12px; font: 400 16px/1.5 var(--font); color: var(--fg);
+}
+.rev-list { display: grid; }
+.rev { display: grid; gap: 4px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.rev:last-child { border-bottom: 0; }
+.rev-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.rev-top b { font-size: 15px; }
+.rev-top small { color: var(--muted); font-size: 12px; }
+.rev p { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 15px; }
+.rev .del { justify-self: start; border: 0; background: none; color: var(--bad); font-size: 13px; font-weight: 600; padding: 4px 0; }
+
+.gbtn {
+  display: flex; align-items: center; justify-content: center; gap: 10px; height: 52px; border-radius: 14px;
+  border: 1px solid var(--line); background: var(--surface); font-weight: 700; font-size: 16px; color: var(--fg);
+}
+.gbtn svg { width: 20px; height: 20px; }
+.or { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; }
+.or::before, .or::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
+.sheet { max-height: 92vh; overflow-y: auto; }
+.sheet.wide { max-width: 760px; }
+.stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.stat { background: var(--surface-2); border-radius: 14px; padding: 12px 14px; display: grid; gap: 2px; }
+.stat span { font-size: 12px; font-weight: 700; color: var(--muted); }
+.stat b { font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.admin-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.admin-table th, .admin-table td { text-align: right; padding: 8px 6px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.admin-table th { color: var(--muted); font-weight: 700; font-size: 12px; }
+.scroll-x { overflow-x: auto; }
+@media (min-width: 640px) { .stat-grid { grid-template-columns: repeat(5, 1fr); } }
+
 /* section tabs */
 .jump {
   position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20;
@@ -743,7 +801,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
     }).join("");
     return `<section class="card" id="secEco" data-sec>
         <h3>רמת זיהום</h3>
-        <div class="eco-top"><b class="num">${n}<small style="font-size:16px;color:var(--muted)">/15</small></b><span class="${label[1]}">זיהום ${label[0]}</span></div>
+        <div class="eco-top"><b class="num" dir="ltr">${n}<small style="font-size:16px;color:var(--muted)">/15</small></b><span class="${label[1]}">זיהום ${label[0]}</span></div>
         <div class="scale" aria-hidden="true">${cells}</div>
         <div class="scale-legend"><span>1 · הכי נקי</span><span>15 · הכי מזהם</span></div>
         <p class="foot">קבוצת זיהום לפי משרד התחבורה ומשרד הגנת הסביבה.</p>
@@ -794,6 +852,8 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
         <button type="button" data-t="secDetails">פרטים</button>
         <button type="button" data-t="specCard">מפרט ודלק</button>
         <button type="button" data-t="countCard">כמה בישראל</button>
+        <button type="button" data-t="secSafety">בטיחות</button>
+        <button type="button" data-t="secReviews">חוות דעת</button>
         <button type="button" data-t="secPrice">מחיר</button>
         ${val(rec, "kvutzat_zihum") ? `<button type="button" data-t="secEco">זיהום</button>` : ""}
       </nav>
@@ -836,6 +896,20 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
       <section class="card" id="countCard" data-sec>
         <h3>כמה יש בישראל</h3>
         <div class="count"><span>סופר…</span><b></b></div>
+      </section>
+
+      <section class="card" id="secSafety" data-sec>
+        <h3>בטיחות ומבחני ריסוק</h3>
+        ${safetyEquipHTML(val(rec, "ramat_eivzur_betihuty"))}
+        <div id="ncapBox"><p class="foot">מחפש תוצאות מבחני ריסוק…</p></div>
+        <div class="links" style="margin-top:6px">
+          <a href="${google(`Euro NCAP ${makerEn(val(rec, "tozeret_nm") || "") || maker} ${val(rec, "kinuy_mishari") || ""} safety rating`)}" target="_blank" rel="noopener">תוצאות Euro NCAP לדגם</a>
+        </div>
+      </section>
+
+      <section class="card" id="secReviews" data-sec>
+        <h3>חוות דעת על ${esc(title)}</h3>
+        <div id="revBox"><p class="foot">טוען חוות דעת…</p></div>
       </section>
 
       <section class="card" id="secPrice" data-sec>
@@ -947,6 +1021,11 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
     }, { rootMargin: "-80px 0px -55% 0px" });
     out.querySelectorAll("[data-sec]").forEach((el) => window._secObserver.observe(el));
 
+    // safety stars + reviews
+    loadSafety(rec);
+    currentModel = { key: `${rec.tozeret_cd ?? maker}|${val(rec, "kinuy_mishari") || val(rec, "degem_nm") || ""}`, title, year };
+    loadReviews();
+
     // fleet counts
     countSame(rec).then((c) => {
       const card = $("#countCard"); if (!card) return;
@@ -957,10 +1036,214 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
     });
   }
 
+  // ---------- safety ----------
+  const starsHTML = (n, max = 5, cls = "") => {
+    const k = Math.max(0, Math.min(max, Math.round(Number(n) || 0)));
+    return `<span class="stars ${cls}" aria-label="${k} מתוך ${max} כוכבים">${Array.from({ length: max }, (_, i) => `<i class="${i < k ? "on" : ""}">★</i>`).join("")}</span>`;
+  };
+
+  function safetyEquipHTML(v) {
+    const n = Number(v);
+    if (v == null || Number.isNaN(n)) return "";
+    const cells = n <= 8 ? `<div class="lvl" aria-hidden="true">${Array.from({ length: 8 }, (_, i) => `<i class="${i < n ? "on" : ""}"></i>`).join("")}</div>` : "";
+    return `<div class="safe-row" style="border:0;padding-bottom:0"><span>רמת אבזור בטיחותי (משרד התחבורה)</span><b class="num" dir="ltr">${n}${n <= 8 ? " / 8" : ""}</b></div>
+      ${cells}<p class="foot">מערכות בטיחות מתקדמות ברכב, כמו בלימה אוטומטית ושמירת נתיב. 8 זו הרמה הגבוהה ביותר.</p>`;
+  }
+
+  async function anyJSON(url) {
+    for (const route of ROUTES) {
+      let timer;
+      try {
+        const to = new Promise((_, rej) => { timer = setTimeout(() => rej(new Error("timeout")), 10000); });
+        const res = await Promise.race([fetch(route(url)), to]);
+        if (!res.ok) continue;
+        return JSON.parse(await res.text());
+      } catch (_) {} finally { clearTimeout(timer); }
+    }
+    return null;
+  }
+  const norm = (s) => String(s || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+
+  // US government crash tests (NHTSA). Only models also sold in the US are covered.
+  async function lookupNHTSA(rec) {
+    const make = makerEn(val(rec, "tozeret_nm") || "");
+    const year = val(rec, "shnat_yitzur");
+    const kin = val(rec, "kinuy_mishari") || "";
+    if (!make || !year || !/[A-Za-z0-9]/.test(kin)) return null;
+    const base = "https://api.nhtsa.gov/SafetyRatings";
+    const models = await anyJSON(`${base}/modelyear/${year}/make/${encodeURIComponent(make)}`);
+    const list = (models?.Results || []).map((m) => m.Model).filter(Boolean);
+    if (!list.length) return null;
+    const k1 = norm(kin), k2 = norm(kin.replace(new RegExp(make, "i"), "")), mk = norm(make);
+    const keys = [k1, k2, mk + k2].filter((k) => k.length >= 2);
+    const model = list.find((m) => keys.includes(norm(m))) || list.find((m) => keys.some((k) => k.length >= 3 && norm(m).startsWith(k)));
+    if (!model) return null;
+    const vars = await anyJSON(`${base}/modelyear/${year}/make/${encodeURIComponent(make)}/model/${encodeURIComponent(model)}`);
+    const vid = vars?.Results?.[0]?.VehicleId;
+    if (!vid) return null;
+    const r = await anyJSON(`${base}/VehicleId/${vid}`);
+    const x = r?.Results?.[0];
+    if (!x) return null;
+    return { desc: x.VehicleDescription, overall: x.OverallRating, front: x.OverallFrontCrashRating, side: x.OverallSideCrashRating, roll: x.RolloverRating };
+  }
+
+  function loadSafety(rec) {
+    lookupNHTSA(rec).then((n) => {
+      const box = $("#ncapBox"); if (!box) return;
+      const num = (v) => { const k = parseInt(v, 10); return Number.isFinite(k) ? k : null; };
+      if (!n || num(n.overall) == null) {
+        box.innerHTML = `<p class="subhead">כוכבי בטיחות</p><p class="foot">לא נמצאו תוצאות מבחני ריסוק לדגם הזה במאגר האמריקאי. רוב הדגמים בישראל נבדקים ב-Euro NCAP, אפשר לבדוק בקישור למטה.</p>`;
+        return;
+      }
+      const row = (label, v) => num(v) == null ? "" : `<div class="safe-row"><span>${label}</span>${starsHTML(num(v), 5, "sm")}</div>`;
+      box.innerHTML = `
+        <p class="subhead">כוכבי בטיחות במבחני ריסוק</p>
+        <div class="safe-big"><b class="num" dir="ltr">${num(n.overall)}<small style="font-size:16px;color:var(--muted)">/5</small></b>${starsHTML(num(n.overall))}</div>
+        ${row("התנגשות חזיתית", n.front)}${row("התנגשות צד", n.side)}${row("עמידות בהתהפכות", n.roll)}
+        <p class="foot">מבחני NHTSA, רשות הבטיחות בדרכים בארה״ב, לגרסה ${esc(n.desc || "")}. הגרסה הישראלית עשויה להיות שונה.</p>`;
+    }).catch(() => {
+      const box = $("#ncapBox");
+      if (box) box.innerHTML = `<p class="foot">לא הצלחתי לטעון תוצאות מבחני ריסוק כרגע.</p>`;
+    });
+  }
+
+  // ---------- reviews ----------
+  let currentModel = null;
+  let isAdmin = false;
+  const displayName = () => {
+    const u = session?.user; if (!u) return "";
+    const m = u.user_metadata || {};
+    return (m.full_name || m.name || (u.email || "").split("@")[0] || "משתמש").slice(0, 60);
+  };
+
+  async function loadReviews() {
+    const box = $("#revBox"); if (!box || !currentModel) return;
+    if (!sb) { box.innerHTML = `<p class="foot">חוות הדעת יופעלו בקרוב.</p>`; return; }
+    const key = currentModel.key;
+    const { data, error } = await sb.from("reviews").select("id,user_id,rating,body,author_name,year,created_at")
+      .eq("model_key", key).order("created_at", { ascending: false }).limit(200);
+    if (!$("#revBox") || currentModel.key !== key) return;
+    if (error) { box.innerHTML = `<p class="foot">חוות הדעת עוד לא הופעלו באתר.</p>`; console.warn(error); return; }
+    renderReviews(data || []);
+  }
+
+  function renderReviews(list) {
+    const box = $("#revBox"); if (!box) return;
+    const avg = list.length ? list.reduce((a, r) => a + r.rating, 0) / list.length : 0;
+    const mine = session ? list.find((r) => r.user_id === session.user.id) : null;
+    let pick = mine ? mine.rating : 0;
+    const showN = 10;
+
+    const summary = list.length
+      ? `<div class="rev-sum"><b class="num">${avg.toFixed(1)}</b><div style="display:grid;gap:4px">${starsHTML(avg)}<span class="foot">${list.length} חוות דעת של משתמשים</span></div></div>`
+      : `<p>עוד אין חוות דעת על הדגם הזה. אפשר להיות הראשונים.</p>`;
+
+    const form = session
+      ? `<form class="rev-form" id="revForm">
+          <span class="subhead" style="margin:0">${mine ? "עריכת חוות הדעת שלך" : "כתבו חוות דעת"}</span>
+          <div class="pick" id="pick" role="radiogroup" aria-label="דירוג">${[1,2,3,4,5].map((i) => `<button type="button" data-v="${i}" aria-label="${i} כוכבים">★</button>`).join("")}</div>
+          <textarea id="revBody" maxlength="1000" placeholder="איך הרכב? נוחות, אמינות, צריכת דלק, תקלות…">${esc(mine?.body || "")}</textarea>
+          <span class="msg" id="revMsg" role="status"></span>
+          <button class="primary" type="submit" id="revGo">${mine ? "עדכן" : "פרסם"}</button>
+          <span class="foot">יפורסם בשם: ${esc(displayName())}</span>
+        </form>`
+      : `<button class="btn-ghost" type="button" id="revLogin" style="margin-top:6px">התחברו כדי לכתוב חוות דעת</button>`;
+
+    const items = list.map((r, i) => `
+      <article class="rev" ${i >= showN ? "hidden" : ""}>
+        <div class="rev-top"><b>${esc(r.author_name || "משתמש")}</b>${starsHTML(r.rating, 5, "sm")}</div>
+        <small class="foot">${new Date(r.created_at).toLocaleDateString("he-IL")}${r.year ? ` · רכב משנת ${esc(r.year)}` : ""}</small>
+        ${r.body ? `<p>${esc(r.body)}</p>` : ""}
+        ${(session && (r.user_id === session.user.id || isAdmin)) ? `<button class="del" type="button" data-id="${r.id}">מחק</button>` : ""}
+      </article>`).join("");
+
+    box.innerHTML = `${summary}${form}
+      ${list.length ? `<div class="rev-list" style="margin-top:6px">${items}</div>` : ""}
+      ${list.length > showN ? `<button class="btn-ghost" type="button" id="revMore">הצג את כל ${list.length} חוות הדעת</button>` : ""}`;
+
+    const more = $("#revMore");
+    if (more) more.onclick = () => { box.querySelectorAll(".rev[hidden]").forEach((e) => e.hidden = false); more.remove(); };
+    const login = $("#revLogin");
+    if (login) login.onclick = () => openLogin("כדי לכתוב חוות דעת צריך להתחבר.");
+
+    box.querySelectorAll(".del").forEach((b) => b.onclick = async () => {
+      if (b.dataset.sure !== "1") { b.dataset.sure = "1"; b.textContent = "בטוח? לחצו שוב למחיקה"; return; }
+      b.disabled = true;
+      const { error } = await sb.from("reviews").delete().eq("id", b.dataset.id);
+      if (error) { b.textContent = "המחיקה נכשלה"; return; }
+      loadReviews();
+    });
+
+    const form$ = $("#revForm");
+    if (!form$) return;
+    const paintPick = () => $("#pick").querySelectorAll("button").forEach((b) => b.classList.toggle("on", Number(b.dataset.v) <= pick));
+    paintPick();
+    $("#pick").querySelectorAll("button").forEach((b) => b.onclick = () => { pick = Number(b.dataset.v); paintPick(); });
+    form$.onsubmit = async (e) => {
+      e.preventDefault();
+      const msg = $("#revMsg"), go = $("#revGo");
+      if (!pick) { msg.className = "msg no"; msg.textContent = "בחרו דירוג של 1 עד 5 כוכבים."; return; }
+      go.disabled = true; msg.className = "msg"; msg.textContent = "שומר…";
+      const row = {
+        user_id: session.user.id, model_key: currentModel.key, title: currentModel.title, year: currentModel.year,
+        rating: pick, body: $("#revBody").value.trim().slice(0, 1000), author_name: displayName(),
+      };
+      const { error } = await sb.from("reviews").upsert(row, { onConflict: "user_id,model_key" });
+      go.disabled = false;
+      if (error) { msg.className = "msg no"; msg.textContent = "לא הצלחתי לשמור. נסו שוב."; console.warn(error); return; }
+      loadReviews();
+    };
+  }
+
+  // ---------- admin ----------
+  async function refreshAdmin() {
+    isAdmin = false;
+    if (!sb || !session) return;
+    const { data } = await sb.rpc("is_admin");
+    isAdmin = !!data;
+  }
+
+  async function openAdmin() {
+    openSheet(`<h2>עמוד ניהול</h2><div id="adminBox"><div class="status"><div class="spinner"></div><span>טוען נתונים…</span></div></div>
+      <button class="textbtn" type="button" data-close>סגור</button>`, true);
+    const { data, error } = await sb.rpc("admin_stats");
+    const box = $("#adminBox"); if (!box) return;
+    if (error || !data) { box.innerHTML = `<p class="no">אין הרשאת ניהול, או שהגדרות הניהול עוד לא הותקנו ב-Supabase.</p>`; return; }
+    const d = (v) => v ? new Date(v).toLocaleDateString("he-IL") : "—";
+    const stat = (label, v) => `<div class="stat"><span>${label}</span><b>${nf(v)}</b></div>`;
+    box.innerHTML = `
+      <div class="stat-grid">
+        ${stat("משתמשים רשומים", data.users)}${stat("חדשים השבוע", data.users_7d)}${stat("רכבים שנבדקו", data.searches)}
+        ${stat("רכבים שמורים", data.saved)}${stat("חוות דעת", data.reviews)}
+      </div>
+      <h3 class="subhead">הדגמים הכי נבדקים</h3>
+      <div class="scroll-x"><table class="admin-table"><thead><tr><th>דגם</th><th>בדיקות</th></tr></thead><tbody>
+        ${(data.top_models || []).map((m) => `<tr><td>${esc(m.title || "—")}</td><td class="num">${nf(m.n)}</td></tr>`).join("") || `<tr><td colspan="2">אין עדיין נתונים</td></tr>`}
+      </tbody></table></div>
+      <h3 class="subhead">נרשמו לאחרונה</h3>
+      <div class="scroll-x"><table class="admin-table"><thead><tr><th>אימייל</th><th>נרשם</th><th>התחבר לאחרונה</th></tr></thead><tbody>
+        ${(data.recent_users || []).map((u) => `<tr><td dir="ltr" style="text-align:right">${esc(u.email || "—")}</td><td>${d(u.created_at)}</td><td>${d(u.last_sign_in_at)}</td></tr>`).join("") || `<tr><td colspan="3">אין עדיין משתמשים</td></tr>`}
+      </tbody></table></div>
+      <h3 class="subhead">חוות דעת אחרונות</h3>
+      <div class="rev-list">
+        ${(data.recent_reviews || []).map((r) => `<article class="rev">
+            <div class="rev-top"><b>${esc(r.title || "")} · ${esc(r.author_name || "")}</b>${starsHTML(r.rating, 5, "sm")}</div>
+            <small class="foot">${d(r.created_at)}</small>${r.body ? `<p>${esc(r.body)}</p>` : ""}
+            <button class="del" type="button" data-id="${r.id}">מחק</button></article>`).join("") || `<p class="foot">אין עדיין חוות דעת.</p>`}
+      </div>`;
+    box.querySelectorAll(".del").forEach((b) => b.onclick = async () => {
+      if (b.dataset.sure !== "1") { b.dataset.sure = "1"; b.textContent = "בטוח? לחצו שוב למחיקה"; return; }
+      b.disabled = true;
+      const { error } = await sb.from("reviews").delete().eq("id", b.dataset.id);
+      if (error) { b.textContent = "המחיקה נכשלה"; return; }
+      b.closest(".rev").remove();
+    });
+  }
+
   // ---------- sheets ----------
-  function openSheet(html) {
+  function openSheet(html, wide = false) {
     const host = $("#sheetHost");
-    host.innerHTML = `<div class="sheet-back" id="sheetBack"><div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div>${html}</div></div>`;
+    host.innerHTML = `<div class="sheet-back" id="sheetBack"><div class="sheet${wide ? " wide" : ""}" role="dialog" aria-modal="true"><div class="grab"></div>${html}</div></div>`;
     $("#sheetBack").onclick = (e) => { if (e.target.id === "sheetBack") closeSheet(); };
     host.querySelectorAll("[data-close]").forEach((b) => b.onclick = closeSheet);
   }
@@ -1036,8 +1319,8 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 
   function paintAccount() {
     if (session) {
-      const email = session.user.email || "";
-      $("#avatar").textContent = (email[0] || "?").toUpperCase();
+      const nm = displayName() || session.user.email || "?";
+      $("#avatar").textContent = nm[0].toUpperCase();
       $("#accountLabel").textContent = "החשבון שלי";
     } else {
       $("#avatar").innerHTML = '<svg class="icon" viewBox="0 0 24 24" style="width:16px;height:16px"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>';
@@ -1056,7 +1339,13 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
     let mode = "in";
     openSheet(`
       <h2 id="loginTitle">התחברות</h2>
-      ${reason ? `<p>${esc(reason)}</p>` : `<p>שמרו רכבים וראו את היסטוריית החיפושים שלכם מכל מכשיר.</p>`}
+      ${reason ? `<p>${esc(reason)}</p>` : `<p>שמרו רכבים, כתבו חוות דעת וראו את ההיסטוריה שלכם מכל מכשיר.</p>`}
+      <button class="gbtn" type="button" id="googleBtn">
+        <svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
+        המשך עם Google
+      </button>
+      <span class="msg" id="googleMsg" role="status"></span>
+      <div class="or">או עם אימייל</div>
       <div class="seg" role="tablist">
         <button type="button" class="on" id="tabIn">התחברות</button>
         <button type="button" id="tabUp">הרשמה</button>
@@ -1076,6 +1365,15 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
       $("#loginGo").textContent = m === "in" ? "התחבר" : "צור חשבון";
       $("#pass").autocomplete = m === "in" ? "current-password" : "new-password";
       $("#loginMsg").textContent = "";
+    };
+    $("#googleBtn").onclick = async () => {
+      const m = $("#googleMsg");
+      m.className = "msg"; m.textContent = "מעביר ל-Google…";
+      const { error } = await sb.auth.signInWithOAuth({ provider: "google", options: { redirectTo: location.origin + location.pathname } });
+      if (error) {
+        m.className = "msg no";
+        m.textContent = /not enabled|Unsupported provider/i.test(error.message) ? "ההתחברות עם Google עוד לא הופעלה באתר." : "משהו השתבש: " + error.message;
+      }
     };
     $("#tabIn").onclick = () => setMode("in");
     $("#tabUp").onclick = () => setMode("up");
@@ -1109,12 +1407,14 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 
   function openAccount() {
     openSheet(`
-      <h2>החשבון שלי</h2>
+      <h2>${esc(displayName())}</h2>
       <p dir="ltr" style="text-align:right">${esc(session.user.email || "")}</p>
       <p>שמורים: ${cloud.filter((c) => c.saved).length} · בהיסטוריה: ${cloud.length}</p>
+      ${isAdmin ? `<button class="primary" type="button" id="adminBtn">עמוד ניהול</button>` : ""}
       <button class="primary" type="button" id="logout" style="background:var(--fg);color:var(--bg)">התנתקות</button>
       <button class="textbtn" type="button" data-close>סגור</button>`);
     $("#logout").onclick = async () => { await sb.auth.signOut(); closeSheet(); };
+    const ab = $("#adminBtn"); if (ab) ab.onclick = openAdmin;
   }
 
   $("#accountBtn").onclick = () => session ? openAccount() : openLogin();
@@ -1131,7 +1431,9 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
     sb.auth.onAuthStateChange(async (_evt, s) => {
       session = s;
       if (session) { await syncLocalToCloud(); await loadCloud(); }
+      await refreshAdmin();
       paintAccount(); renderHistory();
+      if ($("#revBox")) loadReviews();
     });
     sb.auth.getSession().then(({ data }) => { session = data.session; paintAccount(); });
   }

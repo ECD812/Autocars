@@ -69,6 +69,7 @@ body {
   padding-right: max(16px, env(safe-area-inset-right, 0px));
   padding-block: 12px;
   display: grid; gap: 14px;
+  grid-template-columns: minmax(0, 1fr);
 }
 h1, h2, h3, p { margin: 0; }
 h1, h2 { text-wrap: balance; }
@@ -242,6 +243,21 @@ input[type=file] { display: none; }
 .links a::after { content: "↖"; color: var(--muted); }
 .foot { color: var(--muted); font-size: 12px; }
 
+/* section tabs */
+.jump {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20;
+  display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none;
+  padding-block: 10px; background: var(--bg);
+}
+.jump::-webkit-scrollbar { display: none; }
+.jump button {
+  flex: none; height: 38px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--line);
+  background: var(--surface); color: var(--fg); font-weight: 700; font-size: 14px;
+}
+.jump button.on { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+[data-sec] { scroll-margin-top: calc(env(safe-area-inset-top, 0px) + 66px); }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--bg); }
+
 /* emission scale */
 .eco-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
 .eco-top b { font-size: 34px; font-weight: 800; line-height: 1; }
@@ -273,6 +289,52 @@ input[type=file] { display: none; }
 .textbtn { border: 0; background: none; color: var(--muted); font-weight: 600; height: 40px; }
 .msg { font-size: 14px; font-weight: 600; }
 
+/* ---------- layout: phone first, two columns on wide screens ---------- */
+.side { display: grid; gap: 14px; align-content: start; min-width: 0; grid-template-columns: minmax(0, 1fr); }
+#out { display: grid; gap: 14px; align-content: start; min-width: 0; grid-template-columns: minmax(0, 1fr); }
+#out:empty { display: none; }
+
+@media (hover: hover) {
+  .shoot:hover { filter: brightness(1.05); }
+  .gallery:hover { background: rgba(255,255,255,.14); }
+  .go:hover, .primary:hover:not(:disabled) { filter: brightness(1.15); }
+  .hchip:hover, .jump button:not(.on):hover, .chip:hover, .btn-ghost:hover { border-color: var(--muted); }
+  .links a:hover { background: var(--line); }
+  .save:not(.on):hover { background: color-mix(in srgb, var(--coral) 10%, transparent); }
+  .account:hover { border-color: var(--muted); }
+}
+
+@media (min-width: 640px) {
+  .wrap { max-width: 640px; }
+  .hero h1 { font-size: 34px; }
+  .tiles { grid-template-columns: repeat(4, 1fr); }
+  .title-card h2 { font-size: 32px; }
+}
+
+@media (min-width: 960px) {
+  .wrap {
+    max-width: 1180px;
+    grid-template-columns: minmax(340px, 400px) minmax(0, 1fr);
+    column-gap: 28px; row-gap: 18px;
+    padding-block: 24px;
+  }
+  .topbar { grid-column: 1 / -1; }
+  .side { position: sticky; top: 24px; align-self: start; }
+  .history { flex-wrap: wrap; overflow: visible; }
+  #out:empty { display: grid; }
+  #out:empty::before {
+    content: "צלמו לוחית, בחרו תמונה או הקלידו מספר רישוי, והדוח המלא יופיע כאן.";
+    display: grid; place-items: center; min-height: 420px; padding: 32px; text-align: center;
+    border: 2px dashed var(--line); border-radius: var(--r-lg); color: var(--muted); font-size: 17px;
+  }
+  .jump { top: 0; }
+  [data-sec] { scroll-margin-top: 70px; }
+  .snap { max-height: 300px; }
+  .sheet-back { align-items: center; padding: 24px; }
+  .sheet { border-radius: 26px; max-width: 440px; padding: 22px 26px 26px; }
+  .grab { display: none; }
+}
+
 @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 2.4s; } .sheet { animation: none; } .shoot { transition: none; } }
 </style>
 </head>
@@ -288,6 +350,7 @@ input[type=file] { display: none; }
     </button>
   </header>
 
+  <div class="side">
   <section class="hero">
     <div style="display:grid;gap:6px">
       <h1>מה הרכב הזה?</h1>
@@ -327,8 +390,9 @@ input[type=file] { display: none; }
     </div>
     <div class="history" id="history"></div>
   </section>
+  </div>
 
-  <div id="out" style="display:grid;gap:14px"></div>
+  <div id="out"></div>
 </main>
 
 <div id="sheetHost"></div>
@@ -677,7 +741,7 @@ input[type=file] { display: none; }
       const hue = 140 - (i / 14) * 140;
       return `<i style="background:hsl(${hue} 70% 45%)" class="${i + 1 === n ? "on" : ""}"></i>`;
     }).join("");
-    return `<section class="card">
+    return `<section class="card" id="secEco" data-sec>
         <h3>רמת זיהום</h3>
         <div class="eco-top"><b class="num">${n}<small style="font-size:16px;color:var(--muted)">/15</small></b><span class="${label[1]}">זיהום ${label[0]}</span></div>
         <div class="scale" aria-hidden="true">${cells}</div>
@@ -724,7 +788,17 @@ input[type=file] { display: none; }
         </div>
       </section>
 
-      <div class="tiles">
+      <nav class="jump" id="jump" aria-label="מעבר לחלק בדוח">
+        <button type="button" data-t="secOverview" class="on">סקירה</button>
+        <button type="button" data-t="ownersCard">בעלויות</button>
+        <button type="button" data-t="secDetails">פרטים</button>
+        <button type="button" data-t="specCard">מפרט ודלק</button>
+        <button type="button" data-t="countCard">כמה בישראל</button>
+        <button type="button" data-t="secPrice">מחיר</button>
+        ${val(rec, "kvutzat_zihum") ? `<button type="button" data-t="secEco">זיהום</button>` : ""}
+      </nav>
+
+      <div class="tiles" id="secOverview" data-sec>
         <section class="card tile">
           <span class="lbl">טסט אחרון</span>
           <span class="big" dir="ltr" style="text-align:right">${esc(test || "—")}</span>
@@ -741,7 +815,12 @@ input[type=file] { display: none; }
         </section>
       </div>
 
-      <section class="card">
+      <section class="card" id="ownersCard" data-sec>
+        <h3>היסטוריית בעלויות</h3>
+        <p class="foot">בודק בעלויות…</p>
+      </section>
+
+      <section class="card" id="secDetails" data-sec>
         <h3>פרטי הרכב</h3>
         <dl class="kv">
           ${rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}
@@ -749,15 +828,17 @@ input[type=file] { display: none; }
         </dl>
       </section>
 
-      <section class="card" id="specCard" hidden></section>
-      <section class="card" id="ownersCard" hidden></section>
+      <section class="card" id="specCard" data-sec>
+        <h3>מפרט יצרן וצריכת דלק</h3>
+        <p class="foot">טוען מפרט…</p>
+      </section>
 
-      <section class="card" id="countCard">
+      <section class="card" id="countCard" data-sec>
         <h3>כמה יש בישראל</h3>
         <div class="count"><span>סופר…</span><b></b></div>
       </section>
 
-      <section class="card">
+      <section class="card" id="secPrice" data-sec>
         <h3>מחיר בשוק כרגע</h3>
         <div class="links">
           <a href="${google(`site:yad2.co.il ${title} ${year || ""}`)}" target="_blank" rel="noopener">מודעות למכירה ביד2</a>
@@ -789,15 +870,18 @@ input[type=file] { display: none; }
       if (list && list.length) {
         tile.innerHTML = `<span class="lbl">יד</span><span class="big">${list.length}</span><span class="note">לפי רשומות הבעלות</span>`;
         const card = $("#ownersCard");
-        card.hidden = false;
-        card.innerHTML = `<h3>היסטוריית בעלויות</h3><ol class="owners">${list.map((o, i) =>
+        card.innerHTML = `<h3>היסטוריית בעלויות · יד ${list.length}</h3><ol class="owners">${list.map((o, i) =>
           `<li><span class="hand">יד ${i + 1}</span><span>${esc(o.type)}</span><span class="d">${esc(o.date)}</span></li>`).join("")}</ol>`;
       } else {
         tile.innerHTML = `<span class="lbl">יד</span><span class="big">—</span><span class="note">${list ? "אין נתוני בעלות" : "המאגר לא זמין"}</span>`;
+        const card = $("#ownersCard");
+        if (card) card.innerHTML = `<h3>היסטוריית בעלויות</h3><p>${list ? "אין נתוני בעלות לרכב הזה במאגר." : "מאגר הבעלויות לא זמין כרגע. נסו שוב מאוחר יותר."}</p>`;
       }
     }).catch(() => {
       const tile = $("#handTile");
       if (tile) tile.innerHTML = `<span class="lbl">יד</span><span class="big">—</span><span class="note">המאגר לא זמין</span>`;
+      const card = $("#ownersCard");
+      if (card) card.innerHTML = `<h3>היסטוריית בעלויות</h3><p>מאגר הבעלויות לא זמין כרגע. נסו שוב מאוחר יותר.</p>`;
     });
 
     // manufacturer specs
@@ -816,16 +900,52 @@ input[type=file] { display: none; }
             ? `<span class="lbl">כוח מנוע</span><span class="big num">${esc(val(spec, "koah_sus"))} <small>כ״ס</small></span>${importerLink("נפח מיכל דלק")}`
             : `<span class="lbl">מיכל דלק</span><span class="big">—</span>${importerLink("נפח מיכל דלק")}`);
 
-      if (!spec) return;
+      const specCard = $("#specCard");
+      const noSpec = `<h3>מפרט יצרן וצריכת דלק</h3><p>המפרט לא נמצא במאגר משרד התחבורה.</p>${importerLink("צריכת דלק נפח מיכל")}`;
+      if (!spec) { if (specCard) specCard.innerHTML = noSpec; return; }
       if (val(spec, "merkav")) $("#kindTag").textContent = `${kind} · ${val(spec, "merkav")}`;
       const specRows = SPEC_LABELS.filter(([k]) => val(spec, k)).map(([k, l, u]) => [l, val(spec, k) + (u ? " " + u : "")]);
       fuel.filter((f) => f !== main).forEach((f) => specRows.push([`צריכה${f.where ? " " + f.where : ""}`, f.value + (f.unit ? " " + f.unit : "")]));
-      if (specRows.length) {
-        const card = $("#specCard");
-        card.hidden = false;
-        card.innerHTML = `<h3>מפרט יצרן</h3><dl class="kv">${specRows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>`;
+      if (main) specRows.unshift([`צריכת דלק${main.where ? " " + main.where : ""}`, main.value + (main.unit ? " " + main.unit : "")]);
+      if (tank) specRows.unshift(["נפח מיכל דלק", tank + " ליטר"]);
+      if (specCard) specCard.innerHTML = specRows.length
+        ? `<h3>מפרט יצרן וצריכת דלק</h3><dl class="kv">${specRows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>${!tank ? importerLink("נפח מיכל דלק") : ""}`
+        : noSpec;
+    }).catch(() => { const c = $("#specCard"); if (c) c.innerHTML = `<h3>מפרט יצרן וצריכת דלק</h3><p>לא הצלחתי לטעון את המפרט.</p>`; });
+
+    // on phones, bring the report into view
+    if (window.innerWidth < 960) {
+      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      out.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+    }
+
+    // section tabs
+    const jump = $("#jump");
+    const tabs = [...jump.querySelectorAll("button")];
+    const setOn = (id) => tabs.forEach((t) => {
+      const on = t.dataset.t === id;
+      t.classList.toggle("on", on);
+      if (on) {
+        const tr = t.getBoundingClientRect(), jr = jump.getBoundingClientRect();
+        jump.scrollBy({ left: tr.left - (jr.left + jr.width / 2 - tr.width / 2), behavior: "smooth" });
       }
-    }).catch(() => {});
+    });
+    let jumping = false, jumpTimer;
+    tabs.forEach((t) => t.onclick = () => {
+      const el = document.getElementById(t.dataset.t);
+      if (!el) return;
+      jumping = true; clearTimeout(jumpTimer); jumpTimer = setTimeout(() => jumping = false, 800);
+      setOn(t.dataset.t);
+      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      el.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+    });
+    if (window._secObserver) window._secObserver.disconnect();
+    window._secObserver = new IntersectionObserver((entries) => {
+      if (jumping) return;
+      const vis = entries.filter((e) => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+      if (vis) setOn(vis.target.id);
+    }, { rootMargin: "-80px 0px -55% 0px" });
+    out.querySelectorAll("[data-sec]").forEach((el) => window._secObserver.observe(el));
 
     // fleet counts
     countSame(rec).then((c) => {

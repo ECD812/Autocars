@@ -306,7 +306,7 @@ input[type=file] { display: none; }
 @media (min-width: 640px) { .stat-grid { grid-template-columns: repeat(5, 1fr); } }
 
 /* price chart */
-.chart-wrap { direction: ltr; margin-top: 8px; }
+.chart-wrap { direction: ltr; margin-top: 8px; max-width: 560px; width: 100%; justify-self: center; }
 .chart-wrap svg { display: block; width: 100%; height: auto; overflow: visible; }
 .chart-wrap .grid { stroke: var(--line); stroke-width: 1; }
 .chart-wrap .axis { fill: var(--muted); font: 500 13px var(--font); }
@@ -330,6 +330,40 @@ input[type=file] { display: none; }
 .hist-row b { font-size: 15px; }
 .hist-row span { color: var(--muted); font-size: 14px; }
 .danger { height: 48px; border-radius: 14px; border: 1.5px solid var(--bad); background: transparent; color: var(--bad); font-weight: 700; font-size: 15px; }
+
+/* report sections */
+.group { gap: 0; padding: 18px 16px 6px; }
+.sec-title { font-size: 21px; font-weight: 800; letter-spacing: -.01em; margin: 0 0 6px; }
+.block { display: grid; gap: 6px; padding-block: 14px; min-width: 0; }
+.block + .block, .block + div > .block, div + .block { border-top: 1px solid var(--line); }
+.group > .block:first-of-type { border-top: 0; padding-top: 6px; }
+.block > h3 { font-size: 15px; font-weight: 700; color: var(--fg); margin: 0 0 2px; letter-spacing: 0; }
+.block .subhead { margin-top: 6px; }
+.big-num { font-size: 30px; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; text-align: right; }
+.block.est { background: var(--surface-2); border-radius: 14px; padding: 14px; border-top: 0; margin-block: 6px; }
+details.more, details.why { font-size: 14px; }
+details.more > summary, details.why > summary { cursor: pointer; color: var(--il); font-weight: 600; padding: 6px 0; list-style: none; }
+details.more > summary::-webkit-details-marker, details.why > summary::-webkit-details-marker { display: none; }
+details.more > summary::after, details.why > summary::after { content: " ▾"; }
+details[open].more > summary::after, details[open].why > summary::after { content: " ▴"; }
+details.why p { color: var(--muted); margin: 0 0 6px; }
+.safe-row small { color: var(--muted); font-size: 12px; }
+.vin-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 0; border-top: 1px solid var(--line); }
+.vin-lbl { color: var(--muted); font-size: 15px; flex: 1 0 auto; }
+.vin-row code { font: 700 14px/1 var(--mono); letter-spacing: .04em; white-space: nowrap; }
+.vin-row code i { font-style: normal; color: var(--muted); letter-spacing: .1em; }
+.snap.small { max-height: 140px; }
+.tile .big .stars { font-size: 18px; }
+
+/* phones: once a report is open, shrink the search area so the report starts on the first screen */
+@media (max-width: 959px) {
+  body.has-report .hero { padding: 12px; gap: 0; }
+  body.has-report .hero > div:first-child { display: none !important; }
+  body.has-report .hero .shoot, body.has-report .hero .gallery { min-height: 48px; }
+  body.has-report .hero .gallery { width: 48px; }
+  body.has-report #hint, body.has-report #historyBox, body.has-report #modelPhoto { display: none !important; }
+  body.has-report .plate-field input { height: 48px; font-size: 22px; }
+}
 
 /* section tabs */
 .jump {
@@ -784,6 +818,64 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
     return out.join("");
   }
 
+  // annual license fee for private cars, in force from 1.4.2026 (Ministry of Transport)
+  const FEE_GROUPS = [117000, 141000, 167000, 188000, 244000, 347000];
+  const FEE_TABLE = [ // [2024+, 2021-2023, 2017-2020, 2016 and older]
+    [1266, 1109, 972, 849], [1610, 1404, 1230, 1076], [1941, 1698, 1487, 1297], [2315, 1968, 1674, 1422],
+    [2651, 2184, 1802, 1490], [3764, 2823, 2117, 1585], [5364, 3753, 2627, 1840],
+  ];
+  const RADIO_FEE = 135;
+  function licenseFee(newPrice, year) {
+    if (!newPrice || !year) return null;
+    let g = FEE_GROUPS.findIndex((t) => newPrice <= t);
+    if (g < 0) g = FEE_GROUPS.length;
+    const y = Number(year);
+    const col = y >= 2024 ? 0 : y >= 2021 ? 1 : y >= 2017 ? 2 : 3;
+    return { group: g + 1, fee: FEE_TABLE[g][col], total: FEE_TABLE[g][col] + RADIO_FEE };
+  }
+
+  // mandatory insurance samples from the Capital Market Authority's official calculator
+  // (sampled 13.8.2026 for policies from 1.9.2026; ~15 insurers; 10+ years licensed, no claims)
+  // comprehensive insurance: market averages by car type (insurance broker survey, 2026)
+  const COMP_TYPES = {
+    small:  { name: "רכב קטן", avg: 2700, lo: 2200, hi: 3400 },
+    family: { name: "רכב משפחתי", avg: 4100, lo: 3200, hi: 5200 },
+    suv:    { name: "רכב פנאי / SUV", avg: 5800, lo: 4500, hi: 7200 },
+    ev:     { name: "רכב חשמלי", avg: 6900, lo: 5500, hi: 9000 },
+    lux:    { name: "רכב יוקרה", avg: 8500, lo: 7000, hi: 11000 },
+  };
+  const LUX_MAKES = ["BMW", "Mercedes-Benz", "Audi", "Lexus", "Porsche", "Land Rover", "Genesis", "Volvo", "Cadillac", "Polestar"];
+  function carType(rec, spec, newPrice) {
+    const fuel = val(rec, "sug_delek_nm") || "";
+    const make = makerEn(val(rec, "tozeret_nm") || "");
+    const body = spec ? (val(spec, "merkav") || "") : "";
+    if (/חשמל/.test(fuel) && !/היברי|פלאג/.test(fuel)) return "ev";
+    if (LUX_MAKES.includes(make) || (newPrice && newPrice > 300000)) return "lux";
+    if (/SUV|שטח|פנאי|קרוסאובר/i.test(body) || (newPrice && newPrice > 170000)) return "suv";
+    if (newPrice ? newPrice < 110000 : /קטן|מיני/.test(body)) return "small";
+    return "family";
+  }
+
+  // mandatory: Capital Market Authority's official calculator, sampled 13.8.2026 for policies from 1.9.2026
+  function insuranceHTML(rec, spec, price, estValue) {
+    const cc = spec ? Number(val(spec, "nefah_manoa")) || null : null;
+    const small = cc && cc <= 1300;
+    const newPrice = price ? (price.min + price.max) / 2 : null;
+    const t = COMP_TYPES[carType(rec, spec, newPrice)];
+    const hova = small ? { lo: 1342, hi: 1878, mid: 1550 } : { lo: 1396, hi: 1878, mid: 1650 };
+    const range = (a, b) => `<b class="num" dir="ltr">${ils(a)}–${ils(b)}</b>`;
+    const lowValue = estValue && estValue < 45000;
+    return `<h3>ביטוח לנהג מעל גיל 30</h3>
+      <div class="safe-row"><span>ביטוח חובה<br><small>${small ? "עד 1,300 סמ״ק" : "רכב משפחתי"} · לפי רשות שוק ההון</small></span>${range(hova.lo, hova.hi)}</div>
+      <div class="safe-row"><span>ביטוח מקיף<br><small>${t.name} · ממוצע ${ils(t.avg)}</small></span>${range(t.lo, t.hi)}</div>
+      <div class="safe-row" style="font-weight:700"><span style="color:var(--fg)">חובה ומקיף יחד, בערך</span><b class="num" dir="ltr">${ils(hova.lo + t.lo)}–${ils(hova.hi + t.hi)}</b></div>
+      ${lowValue ? `<p class="foot">שווי הרכב נמוך. ברכב כזה ביטוח צד ג׳ משתלם בדרך כלל יותר ממקיף.</p>` : ""}
+      <details class="why"><summary>מאיפה המספרים?</summary>
+        <p><b>חובה:</b> טווח המחירים של כ-15 חברות ביטוח במחשבון הרשמי של רשות שוק ההון, לנהג בגיל 30 עד 45 ומעלה עם ותק ובלי תאונות. נדגם באוגוסט 2026.</p>
+        <p><b>מקיף:</b> למקיף אין מחיר מפוקח או מפורסם. זה ממוצע שוק לסוג הרכב לפי סקר של סוכנות ביטוח ל-2026. המחיר שלכם יכול להיות שונה מאוד לפי הנהגים, הוותק, האזור והרכב.</p>
+      </details>`;
+  }
+
   // importer of the brand, used when the exact model has no price-list entry
   async function lookupBrandImporter(rec) {
     if (rec.tozeret_cd == null) return null;
@@ -1033,8 +1125,8 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
   function vinHTML(vin) {
     if (!vin) return null;
     const shown = vin.slice(0, 5), hidden = Math.max(0, vin.length - 5);
-    return `<span class="vin"><code>${esc(shown)}<i>${"•".repeat(hidden)}</i></code>
-      <button class="lock" type="button" id="vinUnlock">${svg.lock}לשילדה המלאה</button></span>`;
+    return `<div class="vin-row"><span class="vin-lbl">מספר שלדה</span><code dir="ltr">${esc(shown)}<i>${"•".repeat(hidden)}</i></code>
+      <button class="lock" type="button" id="vinUnlock">${svg.lock}לשילדה המלאה</button></div>`;
   }
 
   function emissionHTML(level) {
@@ -1045,13 +1137,12 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
       const hue = 140 - (i / 14) * 140;
       return `<i style="background:hsl(${hue} 70% 45%)" class="${i + 1 === n ? "on" : ""}"></i>`;
     }).join("");
-    return `<section class="card" id="secEco" data-sec>
+    return `<div class="block">
         <h3>רמת זיהום</h3>
         <div class="eco-top"><b class="num" dir="ltr">${n}<small style="font-size:16px;color:var(--muted)">/15</small></b><span class="${label[1]}">זיהום ${label[0]}</span></div>
         <div class="scale" aria-hidden="true">${cells}</div>
         <div class="scale-legend"><span>1 · הכי נקי</span><span>15 · הכי מזהם</span></div>
-        <p class="foot">קבוצת זיהום לפי משרד התחבורה ומשרד הגנת הסביבה.</p>
-      </section>`;
+      </div>`;
   }
 
   function showReport(digits, rec) {
@@ -1069,16 +1160,21 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
     addToHistory(digits, title, year);
     showModelPhoto(rec, [title, year].filter(Boolean).join(" "));
 
-    const rows = [
-      ["יצרן", maker], ["דגם", val(rec, "degem_nm")], ["רמת גימור", val(rec, "ramat_gimur")],
+    const mainRows = [
+      ["יצרן", maker], ["דגם", [val(rec, "degem_nm"), val(rec, "ramat_gimur")].filter(Boolean).join(" · ")],
       ["שנת ייצור", year], ["עלייה לכביש", rec.moed_aliya_lakvish ? monthYear(rec.moed_aliya_lakvish) : null],
-      ["צבע", val(rec, "tzeva_rechev")], ["סוג דלק", val(rec, "sug_delek_nm")], ["דגם מנוע", val(rec, "degem_manoa")],
-      ["בעלות נוכחית", val(rec, "baalut")], ["צמיגים", val(rec, "zmig_kidmi")],
+      ["צבע", val(rec, "tzeva_rechev")], ["סוג דלק", val(rec, "sug_delek_nm")], ["בעלות נוכחית", val(rec, "baalut")],
     ].filter(([, v]) => v);
-    const vin = vinHTML(val(rec, "misgeret"));
+    const moreRows = [
+      ["דגם מנוע", val(rec, "degem_manoa")], ["צמיגים", val(rec, "zmig_kidmi")],
+      ["קוד דגם (משרד התחבורה)", rec.degem_cd != null ? `${rec.tozeret_cd ?? ""}-${rec.degem_cd}${rec.sug_degem ? "-" + rec.sug_degem : ""}` : null],
+    ].filter(([, v]) => v);
+    const vin = vinHTML(val(rec, "misgeret")) || "";
+    const kv = (list) => list.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("");
+    document.body.classList.add("has-report");
 
     out.innerHTML = `
-      ${snap()}
+      ${currentPhoto ? `<img class="snap small" src="${currentPhoto}" alt="התמונה שצולמה">` : ""}
       <section class="card title-card">
         <div class="tags"><span class="tag blue" id="kindTag">${esc(kind)}</span>${val(rec, "sug_delek_nm") ? `<span class="tag">${esc(val(rec, "sug_delek_nm"))}</span>` : ""}</div>
         <div style="display:grid;gap:4px">
@@ -1093,15 +1189,11 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 
       <nav class="jump" id="jump" aria-label="מעבר לחלק בדוח">
         <button type="button" data-t="secOverview" class="on">סקירה</button>
-        <button type="button" data-t="ownersCard">בעלויות</button>
         <button type="button" data-t="secHistory">היסטוריה</button>
-        <button type="button" data-t="secDetails">פרטים</button>
-        <button type="button" data-t="specCard">מפרט ודלק</button>
-        <button type="button" data-t="countCard">כמה בישראל</button>
+        <button type="button" data-t="secSpec">מפרט</button>
         <button type="button" data-t="secSafety">בטיחות</button>
+        <button type="button" data-t="secPrice">מחיר וביטוח</button>
         <button type="button" data-t="secReviews">חוות דעת</button>
-        <button type="button" data-t="secPrice">מחיר</button>
-        ${val(rec, "kvutzat_zihum") ? `<button type="button" data-t="secEco">זיהום</button>` : ""}
       </nav>
 
       <div class="tiles" id="secOverview" data-sec>
@@ -1114,72 +1206,60 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
           <span class="lbl">יד</span><span class="big">…</span><span class="note">בודק בעלויות</span>
         </section>
         <section class="card tile" id="fuelTile">
-          <span class="lbl">צריכת דלק</span><span class="big">…</span><span class="note">נתוני יצרן</span>
+          <span class="lbl">צריכת דלק</span><span class="big">…</span><span class="note">בודק</span>
         </section>
         <section class="card tile" id="tankTile">
-          <span class="lbl">מיכל דלק</span><span class="big">…</span><span class="note">נתוני יצרן</span>
+          <span class="lbl">מנוע</span><span class="big">…</span><span class="note">בודק</span>
         </section>
       </div>
 
-      <section class="card" id="ownersCard" data-sec>
-        <h3>היסטוריית בעלויות</h3>
-        <p class="foot">בודק בעלויות…</p>
+      <section class="card group" id="secHistory" data-sec>
+        <h2 class="sec-title">היסטוריה</h2>
+        <div class="block" id="ownersCard"><h3>בעלויות</h3><p class="foot">בודק בעלויות…</p></div>
+        <div class="block"><h3>בדיקות</h3><div id="histBox"><p class="foot">בודק במאגרי משרד התחבורה…</p></div></div>
       </section>
 
-      <section class="card" id="secHistory" data-sec>
-        <h3>היסטוריה ובדיקות</h3>
-        <div id="histBox"><p class="foot">בודק היסטוריה במאגרי משרד התחבורה…</p></div>
+      <section class="card group" id="secSpec" data-sec>
+        <h2 class="sec-title">מפרט</h2>
+        <div class="block">
+          <dl class="kv">${kv(mainRows)}<dt>יבואן</dt><dd id="importerRow">…</dd><dt>מחירון יצרן (חדש)</dt><dd id="priceRow">…</dd></dl>
+          ${vin}
+          ${moreRows.length ? `<details class="more"><summary>עוד פרטים</summary><dl class="kv">${kv(moreRows)}</dl></details>` : ""}
+        </div>
+        <div class="block" id="specCard"><h3>מנוע וצריכת דלק</h3><p class="foot">טוען מפרט…</p></div>
+        <div class="block" id="countCard"><h3>כמה יש בישראל</h3><p class="foot">סופר…</p></div>
       </section>
 
-      <section class="card" id="secDetails" data-sec>
-        <h3>פרטי הרכב</h3>
-        <dl class="kv">
-          ${rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}
-          ${rec.degem_cd != null ? `<dt>קוד דגם (משרד התחבורה)</dt><dd><span dir="ltr">${esc(rec.tozeret_cd ?? "")}-${esc(rec.degem_cd)}${rec.sug_degem ? "-" + esc(rec.sug_degem) : ""}</span></dd>` : ""}
-          <dt>יבואן</dt><dd id="importerRow">…</dd>
-          <dt>מחירון יצרן (חדש)</dt><dd id="priceRow">…</dd>
-          ${vin ? `<dt>מספר שלדה</dt><dd>${vin}</dd>` : ""}
-        </dl>
+      <section class="card group" id="secSafety" data-sec>
+        <h2 class="sec-title">בטיחות</h2>
+        <div class="block">${euroNcapHTML(rec)}</div>
+        ${safetyEquipHTML(val(rec, "ramat_eivzur_betihuty")) ? `<div class="block">${safetyEquipHTML(val(rec, "ramat_eivzur_betihuty"))}</div>` : ""}
+        <div class="block" id="ncapBox" hidden></div>
+        ${emissionHTML(val(rec, "kvutzat_zihum"))}
       </section>
 
-      <section class="card" id="specCard" data-sec>
-        <h3>מפרט יצרן וצריכת דלק</h3>
-        <p class="foot">טוען מפרט…</p>
+      <section class="card group" id="secPrice" data-sec>
+        <h2 class="sec-title">מחיר וביטוח</h2>
+        <div class="block" id="newPrice"><h3>מחירון יצרן</h3><p class="foot">בודק…</p></div>
+        <div class="block" id="feeBox" hidden></div>
+        <div id="estValue"></div>
+        <div class="block" id="insBox"><h3>ביטוח לנהג מעל גיל 30</h3><p class="foot">טוען…</p></div>
+        <div class="block" id="priceChart" hidden></div>
+        <div class="block">
+          <h3>מחיר בשוק היום</h3>
+          <div class="links">
+            <a href="${google(`site:yad2.co.il ${title} ${year || ""}`)}" target="_blank" rel="noopener">מודעות למכירה ביד2</a>
+            <a href="${google(`מחירון לוי יצחק ${title} ${year || ""}`)}" target="_blank" rel="noopener">מחירון לוי יצחק</a>
+          </div>
+        </div>
       </section>
 
-      <section class="card" id="countCard" data-sec>
-        <h3>כמה יש בישראל</h3>
-        <div class="count"><span>סופר…</span><b></b></div>
-      </section>
-
-      <section class="card" id="secSafety" data-sec>
-        <h3>בטיחות ומבחני ריסוק</h3>
-        ${euroNcapHTML(rec)}
-        ${safetyEquipHTML(val(rec, "ramat_eivzur_betihuty"))}
-        <div id="ncapBox"></div>
-      </section>
-
-      <section class="card" id="secReviews" data-sec>
-        <h3>חוות דעת על ${esc(title)}</h3>
+      <section class="card group" id="secReviews" data-sec ${sb ? "" : "hidden"}>
+        <h2 class="sec-title">חוות דעת</h2>
         <div id="revBox"><p class="foot">טוען חוות דעת…</p></div>
       </section>
 
-      <section class="card" id="secPrice" data-sec>
-        <h3>מחיר</h3>
-        <div id="newPrice"><p class="foot">בודק מחירון יצרן…</p></div>
-        <div id="estValue"></div>
-        <div id="priceChart"></div>
-        <p class="subhead">מחיר בשוק כרגע</p>
-        <div class="links">
-          <a href="${google(`site:yad2.co.il ${title} ${year || ""}`)}" target="_blank" rel="noopener">מודעות למכירה ביד2</a>
-          <a href="${google(`מחירון לוי יצחק ${title} ${year || ""}`)}" target="_blank" rel="noopener">מחירון לוי יצחק</a>
-        </div>
-        <p class="foot">למחירון אין ממשק ציבורי חינמי, לכן המחיר נפתח בדפדפן.</p>
-      </section>
-
-      ${emissionHTML(val(rec, "kvutzat_zihum"))}
-
-      <p class="foot">מקור: מאגרי משרד התחבורה ב-data.gov.il. הנתונים מתעדכנים מעת לעת.</p>`;
+      <p class="foot" style="text-align:center">מקור: מאגרי משרד התחבורה ב-data.gov.il. הנתונים מתעדכנים מעת לעת.</p>`;
 
     // save button
     const saveBtn = $("#saveBtn");
@@ -1202,22 +1282,28 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
       if (list && list.length) {
         tile.innerHTML = `<span class="lbl">יד</span><span class="big">${list.length}</span><span class="note">לפי רשומות הבעלות</span>`;
         const card = $("#ownersCard");
-        card.innerHTML = `<h3>היסטוריית בעלויות · יד ${list.length}</h3><ol class="owners">${list.map((o, i) =>
+        card.innerHTML = `<h3>בעלויות · יד ${list.length}</h3><ol class="owners">${list.map((o, i) =>
           `<li><span class="hand">יד ${i + 1}</span><span>${esc(o.type)}</span><span class="d">${esc(o.date)}</span></li>`).join("")}</ol>`;
       } else {
         tile.innerHTML = `<span class="lbl">יד</span><span class="big">—</span><span class="note">${list ? "אין נתוני בעלות" : "המאגר לא זמין"}</span>`;
         const card = $("#ownersCard");
-        if (card) card.innerHTML = `<h3>היסטוריית בעלויות</h3><p>${list ? "אין נתוני בעלות לרכב הזה במאגר." : "מאגר הבעלויות לא זמין כרגע. נסו שוב מאוחר יותר."}</p>`;
+        if (card) card.innerHTML = `<h3>בעלויות</h3><p class="foot">${list ? "אין נתוני בעלות לרכב הזה במאגר." : "מאגר הבעלויות לא זמין כרגע."}</p>`;
       }
     }).catch(() => {
       const tile = $("#handTile");
       if (tile) tile.innerHTML = `<span class="lbl">יד</span><span class="big">—</span><span class="note">המאגר לא זמין</span>`;
       const card = $("#ownersCard");
-      if (card) card.innerHTML = `<h3>היסטוריית בעלויות</h3><p>מאגר הבעלויות לא זמין כרגע. נסו שוב מאוחר יותר.</p>`;
+      if (card) card.innerHTML = `<h3>בעלויות</h3><p class="foot">מאגר הבעלויות לא זמין כרגע.</p>`;
     });
 
     // manufacturer specs + fuel consumption from tests
-    Promise.all([lookupSpecs(rec).catch(() => null), lookupEPA(rec).catch(() => null)]).then(([spec, epa]) => {
+    const specP = lookupSpecs(rec).catch(() => null);
+    Promise.all([specP, priceP.catch(() => null), ownersP.catch(() => null)]).then(([spec, price, owners]) => {
+      const box = $("#insBox"); if (!box) return;
+      const est = price ? estimateValue((price.min + price.max) / 2, rec, owners) : null;
+      box.innerHTML = insuranceHTML(rec, spec, price, est ? (est.low + est.high) / 2 : null);
+    });
+    Promise.all([specP, lookupEPA(rec).catch(() => null)]).then(([spec, epa]) => {
       const fuelTile = $("#fuelTile"), tankTile = $("#tankTile"), specCard = $("#specCard");
       if (!fuelTile) return;
       const fuel = findFuel(spec);
@@ -1231,14 +1317,17 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
       } else if (epa && epa.kml) {
         fuelTile.innerHTML = `<span class="lbl">צריכת דלק · משולב</span><span class="big num">${epa.kml} <small>ק״מ לליטר</small></span><span class="note">לפי מבחני EPA</span>`;
       } else {
-        fuelTile.innerHTML = `<span class="lbl">צריכת דלק</span><span class="big">—</span><span class="note">אין נתוני צריכה לדגם</span>`;
+        const eu = findEuroNcap(rec);
+        fuelTile.innerHTML = eu
+          ? `<span class="lbl">Euro NCAP</span><span class="big">${starsHTML(eu.stars)}</span><span class="note">מבחן ${eu.year}</span>`
+          : `<span class="lbl">עלייה לכביש</span><span class="big num" dir="ltr" style="text-align:right">${esc(rec.moed_aliya_lakvish ? monthYear(rec.moed_aliya_lakvish) : year || "—")}</span><span class="note">${esc(val(rec, "sug_delek_nm") || "")}</span>`;
       }
 
       tankTile.innerHTML = tank
         ? `<span class="lbl">מיכל דלק</span><span class="big num">${esc(tank)} <small>ליטר</small></span><span class="note">נתוני יצרן</span>`
         : (spec && val(spec, "koah_sus")
             ? `<span class="lbl">כוח מנוע</span><span class="big num">${esc(val(spec, "koah_sus"))} <small>כ״ס</small></span><span class="note">נתוני יצרן</span>`
-            : `<span class="lbl">מיכל דלק</span><span class="big">—</span><span class="note">אין נתון לדגם</span>`);
+            : `<span class="lbl">צבע</span><span class="big" style="font-size:20px">${esc(val(rec, "tzeva_rechev") || "—")}</span><span class="note">${esc(val(rec, "baalut") || "")}</span>`);
 
       if (spec && val(spec, "merkav")) $("#kindTag").textContent = `${kind} · ${val(spec, "merkav")}`;
       const rows = spec ? SPEC_LABELS.filter(([k]) => val(spec, k)).map(([k, l, u]) => [l, val(spec, k) + (u ? " " + u : "")]) : [];
@@ -1251,13 +1340,13 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
         const r = epa.ev
           ? [["צריכה משולבת", `${epa.kwh100} קוט״ש ל-100 ק״מ`], ["טווח נסיעה", epa.range ? `${epa.range} ק״מ` : null]]
           : [["צריכה משולבת", `${epa.kml} ק״מ לליטר · ${epa.l100} ליטר ל-100 ק״מ`], ["בעיר", epa.city ? `${epa.city} ק״מ לליטר` : null], ["בכביש מהיר", epa.hwy ? `${epa.hwy} ק״מ לליטר` : null]];
-        epaHTML = `<p class="subhead">צריכה במבחני EPA (ארה״ב)</p>
+        epaHTML = `<p class="subhead">צריכה במבחני EPA בארה״ב</p>
           <dl class="kv">${r.filter(([, v]) => v).map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join("")}</dl>
-          <p class="foot">ממוצע של ${epa.n} גרסאות ${esc(epa.model)} ${esc(epa.year)} שנבדקו. הגרסה הישראלית עשויה להיות שונה מעט.</p>`;
+          <p class="foot">ממוצע של ${epa.n} גרסאות ${esc(epa.model)} ${esc(epa.year)}.</p>`;
       }
       if (specCard) specCard.innerHTML = (rows.length || epaHTML)
-        ? `<h3>מפרט יצרן וצריכת דלק</h3>${rows.length ? `<dl class="kv">${rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>` : ""}${epaHTML}`
-        : `<h3>מפרט יצרן וצריכת דלק</h3><p>לא נמצאו נתוני מפרט וצריכה לדגם הזה.</p>`;
+        ? `<h3>מנוע וצריכת דלק</h3>${rows.length ? `<dl class="kv">${rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>` : ""}${epaHTML}`
+        : `<h3>מנוע וצריכת דלק</h3><p class="foot">לא נמצאו נתוני מפרט וצריכה לדגם הזה.</p>`;
     });
 
     // on phones, bring the report into view
@@ -1309,15 +1398,25 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
         else lookupBrandImporter(rec).then((n) => { const r2 = $("#importerRow"); if (r2) r2.textContent = n ? `${n} (יבואן המותג)` : "אין נתון"; });
       }
       if (!p) {
-        box.innerHTML = `<p class="foot">אין מחירון יצרן לדגם הזה במאגר משרד התחבורה.</p>`;
+        box.innerHTML = `<h3>מחירון יצרן</h3><p class="foot">אין מחירון יצרן לדגם הזה במאגר משרד התחבורה.</p>`;
         if (row) row.textContent = "אין נתון";
         return;
       }
       const price = p.min === p.max ? ils(p.min) : `${ils(p.min)}–${ils(p.max)}`;
       if (row) row.textContent = price;
       box.innerHTML = `
-        <div class="safe-big"><b class="num" dir="ltr" style="font-size:32px">${price}</b></div>
-        <p class="foot">מחיר מחירון של היבואן לרכב חדש, דגם שנת ${esc(p.year)}${p.exact ? "" : " (השנה הקרובה ביותר שנמצאה)"}${p.importer ? ` · יבואן: ${esc(p.importer)}` : ""}.${p.min !== p.max ? " יש כמה מחירים כי היבואן עדכן מחיר במהלך השנה." : ""}</p>`;
+        <h3>מחירון יצרן</h3>
+        <div class="big-num" dir="ltr">${price}</div>
+        <p class="foot">מחיר רכב חדש, דגם ${esc(p.year)}${p.exact ? "" : " (השנה הקרובה שנמצאה)"}${p.importer ? ` · ${esc(p.importer)}` : ""}</p>`;
+      const f = licenseFee((p.min + p.max) / 2, val(rec, "shnat_yitzur"));
+      const feeBox = $("#feeBox");
+      if (f && feeBox) {
+        feeBox.hidden = false;
+        feeBox.innerHTML = `
+          <h3>אגרת רישוי שנתית</h3>
+          <div class="big-num" dir="ltr">${ils(f.total)}</div>
+          <p class="foot">קבוצת מחיר ${f.group} · ${ils(f.fee)} אגרה ועוד ${ils(RADIO_FEE)} אגרת רדיו. לפי תעריף משרד התחבורה מ-1.4.2026.</p>`;
+      }
     }).catch(() => {
       const box = $("#newPrice"); if (box) box.innerHTML = `<p class="foot">לא הצלחתי לטעון את מחירון היצרן.</p>`;
       const row = $("#priceRow"); if (row) row.textContent = "—";
@@ -1332,26 +1431,30 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
       const e = estimateValue(base, rec, owners);
       if (!e) { box.innerHTML = ""; return; }
       box.innerHTML = `
-        <div class="rev-form" style="margin-top:10px;gap:6px">
-          <span class="subhead" style="margin:0">הערכת שווי היום</span>
-          <b class="num" dir="ltr" style="font-size:28px;font-weight:800;text-align:right">${ils(e.low)}–${ils(e.high)}</b>
-          <p class="foot">חישוב לפי מחירון חדש של ${ils(Math.round(base))}, גיל ${e.years.toFixed(1)} שנים על הכביש, וירידת ערך ממוצעת: 12% בשנה הראשונה, 8% בשנים 2 עד 5, ו-6% בכל שנה אחר כך.${e.adj.length ? " התאמות: " + e.adj.join(", ") + "." : ""}</p>
-          <p class="foot"><b>זו הערכה בלבד ולא מחיר שוק.</b> המחיר בפועל תלוי בקילומטראז׳, במצב הרכב, בתאונות ובביקוש לדגם.</p>
+        <div class="block est">
+          <h3>הערכת שווי היום</h3>
+          <div class="big-num" dir="ltr">${ils(e.low)}–${ils(e.high)}</div>
+          <p class="foot">הערכה בלבד, לא מחיר שוק.</p>
+          <details class="why"><summary>איך זה מחושב?</summary>
+            <p>מחירון חדש של ${ils(Math.round(base))}, גיל ${e.years.toFixed(1)} שנים על הכביש, וירידת ערך ממוצעת: 12% בשנה הראשונה, 8% בשנים 2 עד 5, ו-6% בכל שנה אחר כך.${e.adj.length ? " התאמות: " + e.adj.join(", ") + "." : ""}</p>
+            <p>המחיר בפועל תלוי בקילומטראז׳, במצב הרכב, בתאונות ובביקוש לדגם.</p>
+          </details>
         </div>`;
     });
 
     // list-price history chart
     lookupPriceHistory(rec).then((pts) => {
       const box = $("#priceChart"); if (!box) return;
-      if (!pts || pts.length < 2) { box.innerHTML = ""; return; }
+      if (!pts || pts.length < 2) { box.innerHTML = ""; box.hidden = true; return; }
+      box.hidden = false;
       const carYear = Number(val(rec, "shnat_yitzur"));
       const first = pts[0], last = pts[pts.length - 1];
       const change = Math.round((last.med / first.med - 1) * 100);
       box.innerHTML = `
-        <p class="subhead">מחיר מחירון של ${esc(title)} לפי שנת דגם</p>
+        <h3>מחירון לפי שנת דגם</h3>
         <div class="chart-wrap">${priceChartHTML(pts, carYear)}</div>
         <div class="chart-pick" id="chartPick"><span>${first.year}–${last.year}</span><b>${change >= 0 ? "עלייה" : "ירידה"} של ${Math.abs(change)}% במחירון</b></div>
-        <p class="foot">מחיר רכב חדש מכל שנת דגם, לפי מחירוני היבואנים במשרד התחבורה. הנקודה המלאה היא שנת הרכב שלך. לחצו על נקודה כדי לראות את המחיר.</p>`;
+        <p class="foot">הנקודה המלאה היא שנת הרכב שלך. לחצו על נקודה כדי לראות את המחיר.</p>`;
       box.querySelectorAll(".dot").forEach((d) => d.addEventListener("click", () => {
         const p = pts.find((x) => String(x.year) === d.dataset.y);
         if (!p) return;
@@ -1367,10 +1470,10 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
     // fleet counts
     countSame(rec).then((c) => {
       const card = $("#countCard"); if (!card) return;
-      card.innerHTML = `<h3>כמה יש בישראל</h3>
+      card.innerHTML = `<h3>כמה יש בישראל</h3><div>
         <div class="count"><span>אותו דגם ושנה (${esc(year || "—")})</span><b>${nf(c.exact)}</b></div>
         <div class="count"><span>${esc(title)}, כל השנים</span><b>${nf(c.family)}</b></div>
-        <p class="foot">רכבים פעילים הרשומים במשרד התחבורה</p>`;
+        </div><p class="foot">רכבים פעילים הרשומים במשרד התחבורה</p>`;
     });
   }
 
@@ -1522,20 +1625,20 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
   function euroNcapHTML(rec) {
     const r = findEuroNcap(rec);
     const carYear = val(rec, "shnat_yitzur");
-    if (!r) return `<p class="subhead" style="margin-top:0">Euro NCAP</p><p class="foot">אין במאגר שלנו תוצאת Euro NCAP לדגם הזה.</p>`;
+    if (!r) return `<h3>Euro NCAP</h3><p class="foot">אין במאגר שלנו תוצאת Euro NCAP לדגם הזה.</p>`;
     return `
-      <p class="subhead" style="margin-top:0">כוכבי בטיחות Euro NCAP</p>
+      <h3>מבחני ריסוק Euro NCAP</h3>
       <div class="safe-big"><b class="num" dir="ltr">${r.stars}<small style="font-size:16px;color:var(--muted)">/5</small></b>${starsHTML(r.stars)}</div>
-      <p class="foot">מבחן Euro NCAP משנת ${r.year}, בגרסה עם אבזור בטיחות סטנדרטי.${r.older ? ` הרכב שלך משנת ${esc(carYear)}, וייתכן שהוא מדור קודם שקיבל ציון אחר.` : ""}</p>
-      <div style="height:6px"></div>`;
+      <p class="foot">מבחן משנת ${r.year}, באבזור סטנדרטי.${r.older ? ` הרכב שלך משנת ${esc(carYear)}, ייתכן שמדור קודם.` : ""}</p>
+`;
   }
 
   function safetyEquipHTML(v) {
     const n = Number(v);
     if (v == null || Number.isNaN(n)) return "";
     const cells = n <= 8 ? `<div class="lvl" aria-hidden="true">${Array.from({ length: 8 }, (_, i) => `<i class="${i < n ? "on" : ""}"></i>`).join("")}</div>` : "";
-    return `<div class="safe-row" style="border:0;padding-bottom:0"><span>רמת אבזור בטיחותי (משרד התחבורה)</span><b class="num" dir="ltr">${n}${n <= 8 ? " / 8" : ""}</b></div>
-      ${cells}<p class="foot">מערכות בטיחות מתקדמות ברכב, כמו בלימה אוטומטית ושמירת נתיב. 8 זו הרמה הגבוהה ביותר.</p>`;
+    return `<h3>אבזור בטיחותי</h3><div class="safe-row" style="border:0;padding-bottom:0"><span>רמה לפי משרד התחבורה</span><b class="num" dir="ltr">${n}${n <= 8 ? " / 8" : ""}</b></div>
+      ${cells}<p class="foot">מערכות כמו בלימה אוטומטית ושמירת נתיב. 8 זו הרמה הגבוהה ביותר.</p>`;
   }
 
   async function anyJSON(url) {
@@ -1579,13 +1682,14 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
     lookupNHTSA(rec).then((n) => {
       const box = $("#ncapBox"); if (!box) return;
       const num = (v) => { const k = parseInt(v, 10); return Number.isFinite(k) ? k : null; };
-      if (!n || num(n.overall) == null) { box.innerHTML = ""; return; }
+      if (!n || num(n.overall) == null) { box.innerHTML = ""; box.hidden = true; return; }
+      box.hidden = false;
       const row = (label, v) => num(v) == null ? "" : `<div class="safe-row"><span>${label}</span>${starsHTML(num(v), 5, "sm")}</div>`;
       box.innerHTML = `
-        <p class="subhead">מבחני ריסוק בארה״ב (NHTSA)</p>
+        <h3>מבחני ריסוק בארה״ב (NHTSA)</h3>
         <div class="safe-big"><b class="num" dir="ltr">${num(n.overall)}<small style="font-size:16px;color:var(--muted)">/5</small></b>${starsHTML(num(n.overall))}</div>
         ${row("התנגשות חזיתית", n.front)}${row("התנגשות צד", n.side)}${row("עמידות בהתהפכות", n.roll)}
-        <p class="foot">מבחני NHTSA, רשות הבטיחות בדרכים בארה״ב, לגרסה ${esc(n.desc || "")}. הגרסה הישראלית עשויה להיות שונה.</p>`;
+        <p class="foot">לגרסה האמריקאית ${esc(n.desc || "")}.</p>`;
     }).catch(() => {
       const box = $("#ncapBox");
       if (box) box.innerHTML = `<p class="foot">לא הצלחתי לטעון תוצאות מבחני ריסוק כרגע.</p>`;

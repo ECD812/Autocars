@@ -10,6 +10,7 @@
 <meta name="theme-color" content="#eef1f6" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0b0e13" media="(prefers-color-scheme: dark)">
 <title>AutoCars</title>
+<link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="data:image/png;base64,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">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -317,6 +318,19 @@ input[type=file] { display: none; }
 .chart-pick { direction: rtl; display: flex; justify-content: space-between; gap: 10px; font-size: 14px; margin-top: 6px; }
 .chart-pick b { font-variant-numeric: tabular-nums; }
 
+.site-foot { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; color: var(--muted); font-size: 13px; padding-block: 8px; }
+.site-foot a { color: var(--muted); }
+.hist-row { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; align-items: start; padding: 11px 0; border-bottom: 1px solid var(--line); }
+.hist-row:last-child { border-bottom: 0; }
+.hist-row .ic { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 14px; color: #fff; grid-row: span 2; }
+.hist-row .ic.ok { background: var(--good); color: #fff !important; }
+.hist-row .ic.warn { background: var(--warn); }
+.hist-row .ic.bad { background: var(--bad); }
+.hist-row .ic.na { background: var(--line); color: var(--muted); }
+.hist-row b { font-size: 15px; }
+.hist-row span { color: var(--muted); font-size: 14px; }
+.danger { height: 48px; border-radius: 14px; border: 1.5px solid var(--bad); background: transparent; color: var(--bad); font-weight: 700; font-size: 15px; }
+
 /* section tabs */
 .jump {
   position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20;
@@ -467,6 +481,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
   </div>
 
   <div id="out"></div>
+  <footer class="site-foot"><a href="privacy.html">מדיניות פרטיות</a><span>·</span><span>מידע ממאגרי משרד התחבורה</span></footer>
 </main>
 
 <div id="sheetHost"></div>
@@ -541,9 +556,16 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
     const timeout = new Promise((_, rej) => { timer = setTimeout(() => rej(new Error("timeout")), 12000); });
     try {
       const r = await Promise.race([fetch(ROUTES[i](url)), timeout]);
-      if (!r.ok) throw new Error("http " + r.status);
-      const j = JSON.parse(await r.text());
-      if (!j || j.success === false) throw new Error("api");
+      const text = await r.text();
+      if (!r.ok) {
+        let body = null;
+        try { body = JSON.parse(text); } catch (_) {}
+        if (body && body.success === false) { const e = new Error("api"); e.api = true; throw e; }
+        throw new Error("http " + r.status);
+      }
+      const j = JSON.parse(text);
+      if (!j) throw new Error("empty");
+      if (j.success === false) { const e = new Error("api"); e.api = true; throw e; }
       return j;
     } finally { clearTimeout(timer); }
   }
@@ -555,7 +577,10 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
         const j = await tryRoute(i, url);
         if (i !== routeIndex) { routeIndex = i; try { localStorage.setItem("carcheck.route", String(i)); } catch (_) {} }
         return j;
-      } catch (e) { lastErr = e; }
+      } catch (e) {
+        if (e.api) throw e; // the database answered with an error: another route won't help
+        lastErr = e;
+      }
     }
     throw lastErr || new Error("network");
   }
@@ -664,6 +689,99 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
     v = Math.max(v, newPrice * 0.08);
     const r500 = (x) => Math.round(x / 500) * 500;
     return { low: r500(v * 0.88), high: r500(v * 1.12), years, adj };
+  }
+
+  // ---------- vehicle history (Ministry of Transport) ----------
+  const RES_MILEAGE = "56063a99-8a3e-4ff4-912e-5966c0279bad";   // קילומטראז' אחרון שדווח
+  const RES_RECALL_OPEN = "36bf1404-0be4-49d2-82dc-2f1ead4a8b93"; // ריקולים שלא בוצעו
+  const RES_RECALL_CAT = "2c33523f-87aa-44ec-a736-edbb0a82975e";  // קטלוג ריקולים
+  const RES_CANCEL = "851ecab1-0622-4dbe-a6c7-f950cf82abf9";      // ביטול סופי
+  const RES_PERSONAL = "03adc637-b6fe-402b-9937-7c3d3afc9140";    // יבוא אישי
+
+  // look a plate up in a dataset whose plate column name may vary
+  async function byPlate(rid, digits, limit = 20) {
+    for (const field of ["mispar_rechev", "MISPAR_RECHEV"]) {
+      try {
+        const r = await ds(rid, { filters: { [field]: Number(digits) }, limit });
+        return r.records;
+      } catch (_) {}
+    }
+    try {
+      const r = await ds(rid, { q: String(digits), limit });
+      return r.records.filter((x) => Object.values(x).some((v) => String(v).replace(/\D/g, "") === String(digits)));
+    } catch (_) { return null; }
+  }
+  const pickKey = (r, re) => Object.keys(r || {}).find((k) => !k.startsWith("_") && re.test(k) && val(r, k) != null);
+
+  async function lookupVehicleHistory(digits) {
+    const [mileage, recalls, cancel, personal] = await Promise.all([
+      byPlate(RES_MILEAGE, digits, 5), byPlate(RES_RECALL_OPEN, digits, 20),
+      byPlate(RES_CANCEL, digits, 1), byPlate(RES_PERSONAL, digits, 1),
+    ]);
+    // recall descriptions
+    let recallItems = null;
+    if (recalls && recalls.length) {
+      recallItems = await Promise.all(recalls.slice(0, 5).map(async (r) => {
+        const idKey = pickKey(r, /recall_id/i);
+        const id = idKey ? r[idKey] : null;
+        let text = null;
+        if (id != null) {
+          for (const f of ["RECALL_ID", "recall_id"]) {
+            try {
+              const c = await ds(RES_RECALL_CAT, { filters: { [f]: id }, limit: 1 });
+              const row = c.records[0];
+              if (row) {
+                const strs = Object.entries(row).filter(([k, v]) => !k.startsWith("_") && typeof v === "string" && /[א-ת]/.test(v));
+                text = strs.sort((a, b) => b[1].length - a[1].length)[0]?.[1] || null;
+                break;
+              }
+            } catch (_) {}
+          }
+        }
+        return { id, text };
+      }));
+    }
+    return { mileage, recalls, recallItems, cancel, personal };
+  }
+
+  function historyHTML(h) {
+    const row = (state, title, sub) => `<div class="hist-row"><span class="ic ${state}" aria-hidden="true">${state === "ok" ? "✓" : state === "na" ? "?" : "!"}</span><b>${title}</b><span>${sub}</span></div>`;
+    const out = [];
+
+    // mileage
+    if (h.mileage === null) out.push(row("na", "קילומטראז׳", "המאגר לא זמין כרגע."));
+    else if (!h.mileage.length) out.push(row("na", "קילומטראז׳", "לא דווח קילומטראז׳ לרכב הזה."));
+    else {
+      const r = h.mileage[0];
+      const kmKey = pickKey(r, /kilometer|km|mad_?ochez|kilometraz/i);
+      const dtKey = pickKey(r, /_dt$|date|taarich/i);
+      const km = kmKey ? Number(String(r[kmKey]).replace(/[^\d.]/g, "")) : null;
+      out.push(row("ok", km ? `${km.toLocaleString("he-IL")} ק״מ` : "קילומטראז׳ דווח", `הקילומטראז׳ האחרון שדווח בטסט${dtKey ? `, ${esc(fmtDate(val(r, dtKey)) || val(r, dtKey))}` : ""}.`));
+    }
+
+    // recalls
+    if (h.recalls === null) out.push(row("na", "ריקולים", "המאגר לא זמין כרגע."));
+    else if (!h.recalls.length) out.push(row("ok", "אין ריקולים פתוחים", "לא נמצאו קריאות שירות של היצרן שלא בוצעו ברכב."));
+    else {
+      const list = (h.recallItems || []).map((x) => `<li>${esc(x.text || `ריקול מס׳ ${x.id ?? ""}`)}</li>`).join("");
+      out.push(`<div class="hist-row"><span class="ic warn" aria-hidden="true">!</span><b>${h.recalls.length} ${h.recalls.length === 1 ? "ריקול פתוח" : "ריקולים פתוחים"}</b><span>קריאות שירות של היצרן שעדיין לא בוצעו. התיקון ניתן בחינם אצל היבואן.${list ? `<ul style="margin:6px 0 0;padding-inline-start:18px">${list}</ul>` : ""}</span></div>`);
+    }
+
+    // final cancellation
+    if (h.cancel === null) out.push(row("na", "ביטול סופי", "המאגר לא זמין כרגע."));
+    else if (!h.cancel.length) out.push(row("ok", "לא בוטל סופית", "הרכב לא מופיע ברשימת הרכבים שירדו מהכביש לצמיתות."));
+    else {
+      const dtKey = pickKey(h.cancel[0], /_dt$|date|taarich/i);
+      out.push(row("bad", "הרכב בוטל סופית", `הרכב מופיע ברשימת הביטולים הסופיים${dtKey ? ` מ-${esc(fmtDate(val(h.cancel[0], dtKey)) || val(h.cancel[0], dtKey))}` : ""}. בדרך כלל זה אחרי אובדן גמור או גריטה.`));
+    }
+
+    // personal import
+    if (h.personal && h.personal.length) out.push(row("warn", "יבוא אישי", "הרכב יובא ביבוא אישי ולא דרך היבואן הרשמי."));
+    else if (h.personal) out.push(row("ok", "יבוא רשמי", "הרכב לא רשום כיבוא אישי."));
+
+    // insurance history is not public
+    out.push(row("na", "עבר ביטוחי ותאונות", "המידע הזה לא פתוח לציבור בישראל, כי הוא קשור לבעל הרכב. אפשר לבקש מהמוכר אישור העדר תביעות מחברת הביטוח שלו."));
+    return out.join("");
   }
 
   // importer of the brand, used when the exact model has no price-list entry
@@ -976,6 +1094,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
       <nav class="jump" id="jump" aria-label="מעבר לחלק בדוח">
         <button type="button" data-t="secOverview" class="on">סקירה</button>
         <button type="button" data-t="ownersCard">בעלויות</button>
+        <button type="button" data-t="secHistory">היסטוריה</button>
         <button type="button" data-t="secDetails">פרטים</button>
         <button type="button" data-t="specCard">מפרט ודלק</button>
         <button type="button" data-t="countCard">כמה בישראל</button>
@@ -1005,6 +1124,11 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
       <section class="card" id="ownersCard" data-sec>
         <h3>היסטוריית בעלויות</h3>
         <p class="foot">בודק בעלויות…</p>
+      </section>
+
+      <section class="card" id="secHistory" data-sec>
+        <h3>היסטוריה ובדיקות</h3>
+        <div id="histBox"><p class="foot">בודק היסטוריה במאגרי משרד התחבורה…</p></div>
       </section>
 
       <section class="card" id="secDetails" data-sec>
@@ -1169,6 +1293,11 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
       if (vis) setOn(vis.target.id);
     }, { rootMargin: "-80px 0px -55% 0px" });
     out.querySelectorAll("[data-sec]").forEach((el) => window._secObserver.observe(el));
+
+    // vehicle history
+    lookupVehicleHistory(digits).then((h) => {
+      const box = $("#histBox"); if (box) box.innerHTML = historyHTML(h);
+    }).catch(() => { const b = $("#histBox"); if (b) b.innerHTML = `<p class="foot">לא הצלחתי לטעון את ההיסטוריה כרגע.</p>`; });
 
     // importer list price
     priceP.then((p) => {
@@ -1552,6 +1681,54 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
   }
 
   // ---------- admin ----------
+  // ---------- visit counter (anonymous, only the admin can read it) ----------
+  let visitLogged = false;
+  function logVisit() {
+    if (!sb || visitLogged) return;
+    visitLogged = true;
+    let vid = null;
+    try { vid = localStorage.getItem("carcheck.vid"); } catch (_) {}
+    if (!vid) {
+      vid = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2) + Date.now()).slice(0, 40);
+      try { localStorage.setItem("carcheck.vid", vid); } catch (_) {}
+    }
+    sb.rpc("log_visit", { vid }).then(() => {}, () => {});
+  }
+
+  async function loadVisits() {
+    const box = $("#visitsBox"); if (!box) return;
+    const { data, error } = await sb.rpc("admin_visits");
+    if (!$("#visitsBox")) return;
+    if (error || !Array.isArray(data)) { box.innerHTML = `<p class="foot">ספירת הכניסות עוד לא הותקנה ב-Supabase.</p>`; return; }
+    const days = data.map((d) => ({ day: d.day, visitors: Number(d.visitors) || 0, views: Number(d.views) || 0 }));
+    const today = days[days.length - 1] || { visitors: 0, views: 0 };
+    const yesterday = days[days.length - 2] || { visitors: 0 };
+    const week = days.slice(-7).reduce((a, d) => a + d.visitors, 0);
+    const month = days.reduce((a, d) => a + d.visitors, 0);
+    const stat = (label, v) => `<div class="stat"><span>${label}</span><b>${nf(v)}</b></div>`;
+    const W = 420, H = 150, L = 8, R = 8, T = 18, B = 22;
+    const max = Math.max(1, ...days.map((d) => d.visitors));
+    const bw = (W - L - R) / days.length;
+    const bars = days.map((d, i) => {
+      const h = (d.visitors / max) * (H - T - B);
+      const x = L + i * bw + bw * 0.15, y = H - B - h;
+      const isToday = i === days.length - 1;
+      return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${(bw * 0.7).toFixed(1)}" height="${Math.max(h, d.visitors ? 2 : 0).toFixed(1)}" rx="2" style="fill:var(--coral);opacity:${isToday ? 1 : 0.55}"><title>${new Date(d.day).toLocaleDateString("he-IL")}: ${d.visitors} מבקרים, ${d.views} צפיות</title></rect>`;
+    }).join("");
+    const lbl = (i) => { const d = days[i]; if (!d) return ""; const x = L + i * bw + bw / 2; const dt = new Date(d.day); return `<text x="${x.toFixed(1)}" y="${H - 6}" text-anchor="middle" style="fill:var(--muted);font:500 11px var(--font)">${dt.getDate()}/${dt.getMonth() + 1}</text>`; };
+    const labels = [0, Math.floor(days.length / 2), days.length - 1].map(lbl).join("");
+    box.innerHTML = `
+      <div class="stat-grid">
+        ${stat("מבקרים היום", today.visitors)}${stat("צפיות היום", today.views)}${stat("מבקרים אתמול", yesterday.visitors)}
+        ${stat("מבקרים ב-7 ימים", week)}${stat("מבקרים ב-30 ימים", month)}
+      </div>
+      <div class="chart-wrap"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="מבקרים ביום ב-30 הימים האחרונים">
+        <line x1="${L}" x2="${W - R}" y1="${H - B}" y2="${H - B}" style="stroke:var(--line)"/>
+        <text x="${W - R}" y="12" text-anchor="end" style="fill:var(--muted);font:500 11px var(--font)">שיא: ${max} ביום</text>
+        ${bars}${labels}</svg></div>
+      <p class="foot">מבקר נספר פעם אחת ביום לכל מכשיר. הכניסות שלך לא נספרות. לא נשמר שום מידע מזהה על המבקרים.</p>`;
+  }
+
   async function refreshAdmin() {
     isAdmin = false;
     if (!sb || !session) return;
@@ -1568,6 +1745,9 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
     const d = (v) => v ? new Date(v).toLocaleDateString("he-IL") : "—";
     const stat = (label, v) => `<div class="stat"><span>${label}</span><b>${nf(v)}</b></div>`;
     box.innerHTML = `
+      <h3 class="subhead" style="margin-top:0">כניסות לאתר</h3>
+      <div id="visitsBox"><p class="foot">טוען כניסות…</p></div>
+      <h3 class="subhead">משתמשים ותוכן</h3>
       <div class="stat-grid">
         ${stat("משתמשים רשומים", data.users)}${stat("חדשים השבוע", data.users_7d)}${stat("רכבים שנבדקו", data.searches)}
         ${stat("רכבים שמורים", data.saved)}${stat("חוות דעת", data.reviews)}
@@ -1594,6 +1774,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
       if (error) { b.textContent = "המחיקה נכשלה"; return; }
       b.closest(".rev").remove();
     });
+    loadVisits();
   }
 
   // ---------- sheets ----------
@@ -1712,6 +1893,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
         <span class="msg" id="loginMsg" role="status"></span>
         <button class="primary" type="submit" id="loginGo">התחבר</button>
       </form>
+      <p class="foot" style="text-align:center">בהרשמה אתם מסכימים ל<a href="privacy.html" style="color:inherit">מדיניות הפרטיות</a>.</p>
       <button class="textbtn" type="button" data-close>ביטול</button>`);
     const setMode = (m) => {
       mode = m;
@@ -1768,8 +1950,27 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
       <p>שמורים: ${cloud.filter((c) => c.saved).length} · בהיסטוריה: ${cloud.length}</p>
       ${isAdmin ? `<button class="primary" type="button" id="adminBtn">עמוד ניהול</button>` : ""}
       <button class="primary" type="button" id="logout" style="background:var(--fg);color:var(--bg)">התנתקות</button>
+      <button class="danger" type="button" id="delAcc">מחיקת חשבון</button>
+      <span class="msg" id="delMsg" role="status"></span>
+      <a class="foot" href="privacy.html" style="text-align:center">מדיניות פרטיות</a>
       <button class="textbtn" type="button" data-close>סגור</button>`);
     $("#logout").onclick = async () => { await sb.auth.signOut(); closeSheet(); };
+    $("#delAcc").onclick = async () => {
+      const b = $("#delAcc"), m = $("#delMsg");
+      if (b.dataset.sure !== "1") {
+        b.dataset.sure = "1";
+        b.textContent = "כן, למחוק לצמיתות";
+        m.className = "msg no";
+        m.textContent = "המחיקה תסיר את החשבון, את כל הרכבים השמורים ואת כל חוות הדעת שלך. אי אפשר לבטל אותה.";
+        return;
+      }
+      b.disabled = true; m.className = "msg"; m.textContent = "מוחק…";
+      const { error } = await sb.rpc("delete_my_account");
+      if (error) { b.disabled = false; m.className = "msg no"; m.textContent = "המחיקה נכשלה. נסו שוב, או כתבו לנו דרך מדיניות הפרטיות."; console.warn(error); return; }
+      try { localStorage.removeItem(LKEY); } catch (_) {}
+      await sb.auth.signOut();
+      openSheet(`<h2>החשבון נמחק</h2><p>כל המידע שלך נמחק מהשרת.</p><button class="primary" type="button" data-close>סגור</button>`);
+    };
     const ab = $("#adminBtn"); if (ab) ab.onclick = openAdmin;
   }
 
@@ -1788,6 +1989,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
       session = s;
       if (session) { await syncLocalToCloud(); await loadCloud(); }
       await refreshAdmin();
+      if (!isAdmin) logVisit(); else visitLogged = true;
       paintAccount(); renderHistory();
       if ($("#revBox")) loadReviews();
     });
@@ -1810,6 +2012,9 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
   };
   paintAccount();
   renderHistory();
+  if ("serviceWorker" in navigator && location.protocol === "https:") {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  }
 })();
 </script>
 </body>

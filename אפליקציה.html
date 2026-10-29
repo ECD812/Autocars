@@ -1,0 +1,1038 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="בדיקת רכב">
+<meta name="theme-color" content="#eef1f6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0b0e13" media="(prefers-color-scheme: dark)">
+<title>בדיקת רכב</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;800&family=IBM+Plex+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: one phone-width column. A dark "dashboard" hero up top, then big rounded tiles.
+   Loud colors are borrowed from the Israeli plate: plate yellow and the blue IL strip, plus a coral for "save". */
+:root {
+  --bg: #eef1f6;
+  --surface: #ffffff;
+  --surface-2: #f3f5f9;
+  --fg: #10141b;
+  --muted: #5b6473;
+  --line: #dde2ea;
+  --hero: #10141b;
+  --hero-fg: #f4f6fa;
+  --hero-muted: #9aa4b5;
+  --plate: #ffcc00;
+  --plate-ink: #0d0d0d;
+  --il: #1f4fd1;
+  --coral: #ff5a3c;
+  --good: #128a49;
+  --warn: #c97a00;
+  --bad: #d22f3a;
+  --shadow: 0 1px 2px rgba(16,20,27,.05), 0 8px 24px rgba(16,20,27,.06);
+  --font: "Rubik", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --r-lg: 26px;
+  --r: 18px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b0e13; --surface: #151a22; --surface-2: #1c222c; --fg: #eef1f6; --muted: #8e98a8; --line: #262d39;
+    --hero: #1b2230; --hero-fg: #f4f6fa; --hero-muted: #9aa4b5; --il: #5a85ff; --coral: #ff7a5e;
+    --good: #3fcf7d; --warn: #f2a93b; --bad: #ff6670; --shadow: none; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0b0e13; --surface: #151a22; --surface-2: #1c222c; --fg: #eef1f6; --muted: #8e98a8; --line: #262d39;
+  --hero: #1b2230; --hero-fg: #f4f6fa; --hero-muted: #9aa4b5; --il: #5a85ff; --coral: #ff7a5e;
+  --good: #3fcf7d; --warn: #f2a93b; --bad: #ff6670; --shadow: none; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font: 400 16px/1.5 var(--font);
+  -webkit-text-size-adjust: 100%;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 120px); /* room for the host's banner */
+}
+.wrap {
+  max-width: 560px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 12px;
+  display: grid; gap: 14px;
+}
+h1, h2, h3, p { margin: 0; }
+h1, h2 { text-wrap: balance; }
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--il); outline-offset: 2px; }
+[hidden] { display: none !important; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* ---------- top bar ---------- */
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 20px; letter-spacing: -.01em; }
+.logo-mark {
+  width: 34px; height: 34px; border-radius: 10px; background: var(--plate); color: var(--plate-ink);
+  display: grid; place-items: center; font: 800 13px/1 var(--font); box-shadow: inset 0 0 0 2px var(--plate-ink);
+}
+.account {
+  display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px 0 6px; border-radius: 999px;
+  border: 1px solid var(--line); background: var(--surface); font-weight: 600; font-size: 14px;
+}
+.avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--il); color: #fff; display: grid; place-items: center; font-weight: 700; font-size: 13px; }
+
+/* ---------- hero ---------- */
+.hero {
+  background: var(--hero); color: var(--hero-fg); border-radius: var(--r-lg); padding: 22px 18px 18px;
+  display: grid; gap: 16px; position: relative; overflow: hidden;
+}
+.hero::after { /* subtle plate-strip motif */
+  content: ""; position: absolute; inset: 0 auto 0 0; width: 10px; background: var(--il); opacity: .9;
+}
+.hero h1 { font-weight: 800; font-size: 30px; line-height: 1.1; letter-spacing: -.02em; }
+.hero p { color: var(--hero-muted); font-size: 15px; }
+.hero-actions { display: grid; grid-template-columns: 1fr auto; gap: 10px; }
+.shoot {
+  display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 60px; border-radius: 18px;
+  background: var(--plate); color: var(--plate-ink); font-weight: 800; font-size: 18px; border: 0;
+  transition: transform .15s ease;
+}
+.shoot:active { transform: scale(.98); }
+.gallery {
+  display: grid; place-items: center; width: 60px; min-height: 60px; border-radius: 18px;
+  background: rgba(255,255,255,.08); color: var(--hero-fg); border: 1px solid rgba(255,255,255,.14);
+}
+input[type=file] { display: none; }
+.icon { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ---------- model photo (above the search row) ---------- */
+.model-photo {
+  border-radius: var(--r-lg); overflow: hidden; background: var(--surface); box-shadow: var(--shadow);
+  border: 1px solid var(--line); position: relative;
+}
+.model-photo img { display: block; width: 100%; max-width: 100%; aspect-ratio: 16 / 10; object-fit: cover; background: var(--surface-2); }
+.model-photo figcaption {
+  position: absolute; inset: auto 0 0 0; padding: 28px 16px 12px; color: #fff; font-weight: 700; font-size: 18px;
+  background: linear-gradient(to top, rgba(0,0,0,.7), rgba(0,0,0,0));
+  display: flex; justify-content: space-between; align-items: end; gap: 10px;
+}
+.model-photo figcaption small { font-weight: 400; font-size: 11px; opacity: .8; }
+
+/* ---------- plate search ---------- */
+.search { display: flex; gap: 10px; align-items: stretch; }
+.plate-field {
+  flex: 1; min-width: 0; display: flex; direction: ltr; border-radius: 14px; overflow: hidden;
+  border: 3px solid var(--plate-ink); background: var(--plate); box-shadow: var(--shadow);
+}
+.plate-field .il {
+  flex: none; width: 34px; background: #1f4fd1; color: #fff; display: flex; flex-direction: column; align-items: center;
+  justify-content: flex-end; padding-bottom: 7px; font: 700 11px/1 var(--font);
+}
+.plate-field input {
+  flex: 1; min-width: 0; height: 58px; border: 0; background: transparent; color: var(--plate-ink);
+  font: 800 26px/1 var(--font); letter-spacing: .04em; text-align: center; font-variant-numeric: tabular-nums;
+}
+.plate-field input::placeholder { color: rgba(13,13,13,.4); font-weight: 700; font-size: 20px; letter-spacing: 0; }
+.plate-field input:focus { outline: none; }
+.plate-field:focus-within { outline: 3px solid var(--il); outline-offset: 2px; }
+.go {
+  flex: none; min-width: 76px; border: 0; border-radius: 14px; background: var(--fg); color: var(--bg); font-weight: 800; font-size: 17px;
+}
+.hint { color: var(--muted); font-size: 13px; }
+.hint.err { color: var(--bad); }
+
+/* ---------- history ---------- */
+.history-head { display: flex; justify-content: space-between; align-items: baseline; }
+.history-head h3 { font-size: 14px; font-weight: 700; color: var(--muted); }
+.history-head button { border: 0; background: none; color: var(--il); font-size: 13px; font-weight: 600; padding: 4px; }
+.history { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+.history::-webkit-scrollbar { display: none; }
+.hchip {
+  flex: none; display: grid; gap: 2px; text-align: right; padding: 10px 14px; border-radius: 16px;
+  border: 1px solid var(--line); background: var(--surface); max-width: 200px;
+}
+.hchip b { font-size: 14px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hchip span { font: 500 12px/1 var(--mono); color: var(--muted); direction: ltr; text-align: right; }
+
+/* ---------- status ---------- */
+.status { display: flex; align-items: center; gap: 14px; padding: 16px; border-radius: var(--r); background: var(--surface); border: 1px solid var(--line); }
+.spinner { width: 24px; height: 24px; border-radius: 50%; border: 3px solid var(--line); border-top-color: var(--il); animation: spin .8s linear infinite; flex: none; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.bar { height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; }
+.bar > i { display: block; height: 100%; width: 0; background: var(--il); border-radius: 3px; transition: width .2s; }
+.status.err { border-color: var(--bad); }
+.btn-ghost { min-height: 44px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2); font-weight: 600; padding: 0 16px; }
+.snap { width: 100%; max-height: 220px; object-fit: cover; border-radius: var(--r); display: block; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font: 700 16px/1 var(--mono); direction: ltr; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); }
+
+/* ---------- report ---------- */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; display: grid; gap: 6px; min-width: 0; box-shadow: var(--shadow); }
+.card > h3 { font-size: 13px; font-weight: 700; color: var(--muted); letter-spacing: .02em; margin-bottom: 4px; }
+.title-card { gap: 12px; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag { font-size: 12px; font-weight: 700; padding: 5px 10px; border-radius: 999px; background: var(--surface-2); color: var(--muted); }
+.tag.blue { background: color-mix(in srgb, var(--il) 14%, transparent); color: var(--il); }
+.title-card h2 { font-size: 28px; font-weight: 800; line-height: 1.1; letter-spacing: -.02em; }
+.title-card .sub { color: var(--muted); font-size: 15px; }
+.title-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.plate {
+  direction: ltr; display: inline-flex; border-radius: 9px; overflow: hidden; border: 3px solid var(--plate-ink);
+  background: var(--plate); color: var(--plate-ink);
+}
+.plate .il { background: #1f4fd1; color: #fff; font: 700 10px/1 var(--font); padding: 0 5px 5px; display: flex; align-items: flex-end; }
+.plate .n { font: 800 24px/1 var(--font); padding: 7px 12px; letter-spacing: .03em; font-variant-numeric: tabular-nums; }
+.save {
+  display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 14px; border-radius: 999px;
+  border: 1.5px solid var(--coral); color: var(--coral); background: transparent; font-weight: 700; font-size: 14px;
+}
+.save.on { background: var(--coral); color: #fff; }
+.save .icon { width: 18px; height: 18px; }
+.save.on .icon { fill: currentColor; }
+
+.tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.tile { padding: 14px; gap: 2px; }
+.tile .lbl { font-size: 12px; font-weight: 700; color: var(--muted); }
+.tile .big { font-size: 24px; font-weight: 800; line-height: 1.2; font-variant-numeric: tabular-nums; letter-spacing: -.01em; overflow-wrap: anywhere; }
+.tile .big small { font-size: 13px; font-weight: 600; color: var(--muted); letter-spacing: 0; }
+.tile .note { font-size: 12px; font-weight: 600; color: var(--muted); }
+.ok { color: var(--good) !important; } .no { color: var(--bad) !important; }
+
+.kv { display: grid; grid-template-columns: auto 1fr; margin: 0; }
+.kv dt, .kv dd { margin: 0; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
+.kv dt { color: var(--muted); padding-left: 16px; }
+.kv dd { text-align: left; font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+.kv > :nth-last-child(-n+2) { border-bottom: 0; }
+
+.vin { display: inline-flex; align-items: center; gap: 8px; direction: ltr; }
+.vin code { font: 700 15px/1 var(--mono); letter-spacing: .06em; }
+.vin code i { font-style: normal; color: var(--muted); letter-spacing: .12em; }
+.lock {
+  display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 10px; border-radius: 999px; border: 0;
+  background: var(--fg); color: var(--bg); font: 700 12px/1 var(--font);
+}
+.lock .icon { width: 14px; height: 14px; }
+
+.owners { list-style: none; margin: 0; padding: 0; display: grid; }
+.owners li { display: grid; grid-template-columns: 54px 1fr auto; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); align-items: center; font-size: 15px; }
+.owners li:last-child { border-bottom: 0; }
+.owners .hand { font-weight: 800; }
+.owners .d { color: var(--muted); direction: ltr; font-variant-numeric: tabular-nums; }
+
+.count { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.count:last-of-type { border-bottom: 0; }
+.count span { color: var(--muted); font-size: 15px; min-width: 0; }
+.count b { font-size: 24px; font-weight: 800; font-variant-numeric: tabular-nums; }
+
+.links { display: grid; gap: 8px; }
+.links a {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px; border-radius: 14px;
+  background: var(--surface-2); color: var(--fg); text-decoration: none; font-weight: 600;
+}
+.links a::after { content: "↖"; color: var(--muted); }
+.foot { color: var(--muted); font-size: 12px; }
+
+/* emission scale */
+.eco-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.eco-top b { font-size: 34px; font-weight: 800; line-height: 1; }
+.eco-top span { font-size: 14px; font-weight: 700; }
+.scale { display: grid; grid-template-columns: repeat(15, 1fr); gap: 3px; margin-top: 8px; direction: rtl; }
+.scale i { height: 12px; border-radius: 3px; opacity: .28; }
+.scale i.on { opacity: 1; outline: 2px solid var(--fg); outline-offset: 1px; }
+.scale-legend { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+/* ---------- sheet (login / paywall) ---------- */
+.sheet-back { position: fixed; inset: 0; background: rgba(5,8,12,.5); z-index: 40; display: grid; align-items: end; }
+.sheet {
+  background: var(--surface); border-radius: 26px 26px 0 0; max-width: 560px; width: 100%; margin: 0 auto;
+  padding: 10px max(18px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 22px) max(18px, env(safe-area-inset-left, 0px));
+  display: grid; gap: 14px; animation: up .22s ease-out;
+}
+@keyframes up { from { transform: translateY(30px); opacity: 0; } }
+.grab { width: 40px; height: 5px; border-radius: 3px; background: var(--line); justify-self: center; }
+.sheet h2 { font-size: 22px; font-weight: 800; }
+.sheet p { color: var(--muted); font-size: 15px; }
+.seg { display: grid; grid-template-columns: 1fr 1fr; background: var(--surface-2); border-radius: 12px; padding: 4px; }
+.seg button { border: 0; background: none; height: 38px; border-radius: 9px; font-weight: 700; color: var(--muted); }
+.seg button.on { background: var(--surface); color: var(--fg); box-shadow: var(--shadow); }
+.field { display: grid; gap: 6px; }
+.field label { font-size: 13px; font-weight: 700; color: var(--muted); }
+.field input { height: 50px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2); padding: 0 14px; font-size: 16px; direction: ltr; text-align: right; }
+.primary { height: 52px; border: 0; border-radius: 14px; background: var(--il); color: #fff; font-weight: 800; font-size: 16px; }
+.primary:disabled { opacity: .6; }
+.textbtn { border: 0; background: none; color: var(--muted); font-weight: 600; height: 40px; }
+.msg { font-size: 14px; font-weight: 600; }
+
+@media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 2.4s; } .sheet { animation: none; } .shoot { transition: none; } }
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header class="topbar">
+    <div class="logo"><span class="logo-mark" aria-hidden="true">IL</span>בדיקת רכב</div>
+    <button class="account" id="accountBtn" type="button">
+      <span class="avatar" id="avatar" aria-hidden="true">
+        <svg class="icon" viewBox="0 0 24 24" style="width:16px;height:16px"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>
+      </span>
+      <span id="accountLabel">התחברות</span>
+    </button>
+  </header>
+
+  <section class="hero">
+    <div style="display:grid;gap:6px">
+      <h1>מה הרכב הזה?</h1>
+      <p>מצלמים לוחית, ומקבלים דגם, טסט, יד, צריכת דלק והיסטוריית בעלויות.</p>
+    </div>
+    <div class="hero-actions">
+      <label class="shoot" for="cam">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M3 8a2 2 0 0 1 2-2h2l2-2h6l2 2h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="13" r="4"/></svg>
+        צלם לוחית
+      </label>
+      <label class="gallery" for="gal" aria-label="בחירת תמונה מהגלריה">
+        <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>
+      </label>
+      <input id="cam" type="file" accept="image/*" capture="environment">
+      <input id="gal" type="file" accept="image/*">
+    </div>
+  </section>
+
+  <figure class="model-photo" id="modelPhoto" hidden style="margin:0">
+    <img id="modelImg" alt="">
+    <figcaption><span id="modelCap"></span><small>תמונה להמחשה · ויקיפדיה</small></figcaption>
+  </figure>
+
+  <form class="search" id="searchForm" autocomplete="off">
+    <div class="plate-field">
+      <span class="il">IL</span>
+      <input id="plateInput" inputmode="numeric" placeholder="מספר רישוי" aria-label="מספר רישוי" maxlength="11">
+    </div>
+    <button class="go" type="submit">בדוק</button>
+  </form>
+  <p class="hint" id="hint">אפשר גם להקליד מספר. הנתונים מגיעים ממאגרי משרד התחבורה.</p>
+
+  <section id="historyBox" hidden>
+    <div class="history-head">
+      <h3 id="historyTitle">חיפושים אחרונים</h3>
+      <button type="button" id="historyAction" hidden></button>
+    </div>
+    <div class="history" id="history"></div>
+  </section>
+
+  <div id="out" style="display:grid;gap:14px"></div>
+</main>
+
+<div id="sheetHost"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+(() => {
+  // ======================================================================
+  //  הגדרות – למלא כדי להפעיל חשבונות משתמשים ותשלום על שילדה מלאה
+  // ======================================================================
+  const SUPABASE_URL = "";        // לדוגמה: https://abcd1234.supabase.co
+  const SUPABASE_ANON_KEY = "";   // ה-anon public key מהגדרות הפרויקט
+  const VIN_PAYMENT_URL = "";     // קישור תשלום (למשל PayBox / Stripe Payment Link)
+  const VIN_PRICE = "9.90 ₪";
+  // ======================================================================
+
+  const API = "https://data.gov.il/api/3/action/";
+  const RES_VEHICLES = "053cea08-09bc-40ec-8f7a-156f0677aff3";
+  const RES_WLTP = "142afde2-6228-49f9-8a29-9b6c3a0cbe40";
+  let RES_OWNERS = "bb2355dc-9ec7-4f06-9c3f-3344672171da";
+  let ownersChecked = false;
+
+  const $ = (s) => document.querySelector(s);
+  const out = $("#out");
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const svg = {
+    heart: '<svg class="icon" viewBox="0 0 24 24"><path d="M12 20s-7-4.4-9-9.2C1.7 7.4 4 4 7.4 4c2 0 3.6 1.1 4.6 2.7C13 5.1 14.6 4 16.6 4 20 4 22.3 7.4 21 10.8 19 15.6 12 20 12 20z"/></svg>',
+    lock: '<svg class="icon" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>',
+  };
+
+  // ---------- helpers ----------
+  const fmtPlate = (d) => d.length === 7 ? `${d.slice(0,2)}-${d.slice(2,5)}-${d.slice(5)}`
+                     : d.length === 8 ? `${d.slice(0,3)}-${d.slice(3,5)}-${d.slice(5)}` : d;
+  function fmtDate(v) {
+    if (!v) return null;
+    const m = String(v).match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    return m ? `${m[3].padStart(2,"0")}/${m[2].padStart(2,"0")}/${m[1]}` : String(v);
+  }
+  function toDate(v) {
+    const m = String(v || "").match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null;
+  }
+  function monthYear(v) {
+    const s = String(v ?? ""), p = s.split("-");
+    if (p.length >= 2 && p[1]) return `${p[1].padStart(2,"0")}/${p[0]}`;
+    const d = s.replace(/\D/g, "");
+    return d.length === 6 ? `${d.slice(4)}/${d.slice(0,4)}` : s;
+  }
+  const COUNTRIES = new Set(["יפן","קוריאה","גרמניה","צרפת","ספרד","צ'כיה","ארה\"ב","סין","איטליה","אנגליה","בריטניה","טורקיה","הודו","תאילנד","מקסיקו","רומניה","שבדיה","בלגיה","אוסטריה","הונגריה","סלובקיה","פולין","דרום","אפריקה","קנדה","ברזיל","יפאן","סלובניה","מרוקו"]);
+  function cleanMaker(s) {
+    const w = String(s || "").trim().split(/\s+/);
+    while (w.length > 1 && COUNTRIES.has(w[w.length - 1])) w.pop();
+    return w.join(" ");
+  }
+  const val = (r, k) => { const v = r?.[k]; return v === null || v === undefined || String(v).trim() === "" ? null : String(v).trim(); };
+  const nf = (x) => x == null ? "—" : Number(x).toLocaleString("he-IL");
+
+  // ---------- data.gov.il (with fallback routes) ----------
+  const ROUTES = [
+    (u) => u,
+    (u) => "https://corsproxy.io/?url=" + encodeURIComponent(u),
+    (u) => "https://api.allorigins.win/raw?url=" + encodeURIComponent(u),
+    (u) => "https://api.codetabs.com/v1/proxy/?quest=" + encodeURIComponent(u),
+  ];
+  let routeIndex = (() => { try { return Number(localStorage.getItem("carcheck.route")) || 0; } catch (_) { return 0; } })();
+  if (!(routeIndex >= 0 && routeIndex < ROUTES.length)) routeIndex = 0;
+
+  async function tryRoute(i, url) {
+    let timer;
+    const timeout = new Promise((_, rej) => { timer = setTimeout(() => rej(new Error("timeout")), 12000); });
+    try {
+      const r = await Promise.race([fetch(ROUTES[i](url)), timeout]);
+      if (!r.ok) throw new Error("http " + r.status);
+      const j = JSON.parse(await r.text());
+      if (!j || j.success === false) throw new Error("api");
+      return j;
+    } finally { clearTimeout(timer); }
+  }
+  async function getJSON(url) {
+    const order = [routeIndex, ...ROUTES.map((_, i) => i).filter((i) => i !== routeIndex)];
+    let lastErr;
+    for (const i of order) {
+      try {
+        const j = await tryRoute(i, url);
+        if (i !== routeIndex) { routeIndex = i; try { localStorage.setItem("carcheck.route", String(i)); } catch (_) {} }
+        return j;
+      } catch (e) { lastErr = e; }
+    }
+    throw lastErr || new Error("network");
+  }
+  async function ds(resource, { filters, q, limit = 1 } = {}) {
+    const u = new URL(API + "datastore_search");
+    u.searchParams.set("resource_id", resource);
+    u.searchParams.set("limit", String(limit));
+    if (filters) u.searchParams.set("filters", JSON.stringify(filters));
+    if (q) u.searchParams.set("q", q);
+    return (await getJSON(u.toString())).result;
+  }
+
+  const vehCache = new Map();
+  async function lookupVehicle(digits) {
+    if (vehCache.has(digits)) return vehCache.get(digits);
+    const res = await ds(RES_VEHICLES, { filters: { mispar_rechev: Number(digits) }, limit: 1 });
+    const rec = res.records[0] || null;
+    vehCache.set(digits, rec);
+    return rec;
+  }
+
+  async function ensureOwnersResource() {
+    if (ownersChecked) return RES_OWNERS;
+    ownersChecked = true;
+    try {
+      const t = await ds(RES_OWNERS, { limit: 1 });
+      if (t.records[0] && "baalut_dt" in t.records[0]) return RES_OWNERS;
+    } catch (_) {}
+    try {
+      const u = new URL(API + "package_search");
+      u.searchParams.set("q", "היסטוריית בעלויות רכב");
+      u.searchParams.set("rows", "10");
+      const j = await getJSON(u.toString());
+      for (const p of j.result.results) for (const r of p.resources || []) {
+        if (!r.datastore_active) continue;
+        try {
+          const t = await ds(r.id, { limit: 1 });
+          if (t.records[0] && "baalut_dt" in t.records[0]) { RES_OWNERS = r.id; return RES_OWNERS; }
+        } catch (_) {}
+      }
+    } catch (_) {}
+    RES_OWNERS = null;
+    return null;
+  }
+  async function lookupOwners(digits) {
+    const rid = await ensureOwnersResource();
+    if (!rid) return null;
+    const res = await ds(rid, { filters: { mispar_rechev: Number(digits) }, limit: 50 });
+    return res.records
+      .map((r) => ({ key: Number(String(r.baalut_dt ?? "").replace(/\D/g, "")) || 0, date: monthYear(r.baalut_dt), type: val(r, "baalut") || "—" }))
+      .sort((a, b) => a.key - b.key);
+  }
+
+  async function countSame(rec) {
+    const o = { exact: null, family: null };
+    if (rec.tozeret_cd == null) return o;
+    const jobs = [];
+    if (rec.degem_nm != null && rec.shnat_yitzur != null)
+      jobs.push(ds(RES_VEHICLES, { filters: { tozeret_cd: rec.tozeret_cd, degem_nm: rec.degem_nm, shnat_yitzur: rec.shnat_yitzur }, limit: 0 }).then((r) => o.exact = r.total).catch(() => {}));
+    if (rec.kinuy_mishari != null)
+      jobs.push(ds(RES_VEHICLES, { filters: { tozeret_cd: rec.tozeret_cd, kinuy_mishari: rec.kinuy_mishari }, limit: 0 }).then((r) => o.family = r.total).catch(() => {}));
+    await Promise.all(jobs);
+    return o;
+  }
+
+  // ---------- manufacturer specs (WLTP dataset) ----------
+  async function lookupSpecs(rec) {
+    if (rec.tozeret_cd == null || rec.degem_cd == null) return null;
+    const tries = [
+      { tozeret_cd: rec.tozeret_cd, degem_cd: rec.degem_cd, shnat_yitzur: rec.shnat_yitzur },
+      { tozeret_cd: rec.tozeret_cd, degem_cd: rec.degem_cd },
+    ];
+    for (const f of tries) {
+      if (Object.values(f).some((v) => v == null)) continue;
+      try {
+        const r = await ds(RES_WLTP, { filters: f, limit: 1 });
+        if (r.records.length) return r.records[0];
+      } catch (_) {}
+    }
+    return null;
+  }
+
+  // שדות שמופיעים במאגר המפרט. מוצגים רק אם קיימים.
+  const SPEC_LABELS = [
+    ["merkav", "מרכב"], ["nefah_manoa", "נפח מנוע", "סמ״ק"], ["koah_sus", "כוח סוס", "כ״ס"],
+    ["hanaa_nm", "הנעה"], ["technologiat_hanaa_nm", "טכנולוגיית הנעה"], ["mispar_dlatot", "דלתות"],
+    ["mispar_moshavim", "מושבים"], ["mishkal_kolel", "משקל כולל", "ק״ג"], ["kosher_grira_im_blamim", "כושר גרירה", "ק״ג"],
+    ["kamut_CO2", "פליטת CO₂", "גרם/ק״מ"], ["kamut_CO2_city", "CO₂ עירוני", "גרם/ק״מ"],
+    ["mispar_kariot_avir", "כריות אוויר"], ["nikud_betihut", "ניקוד בטיחות"],
+  ];
+  const keysOf = (r) => Object.keys(r || {}).filter((k) => !k.startsWith("_") && k !== "rank" && val(r, k) != null);
+  function findFuel(spec) {
+    if (!spec) return [];
+    return keysOf(spec)
+      .filter((k) => /tzric|tsric|tzrich|tzriha|km_l|liter|l_100|l100|ironi|meshulav|delek_kmb/i.test(k) && !/sug_delek|delek_nm|_cd$/i.test(k))
+      .map((k) => {
+        const where = /bein|ben_ironi|highway|kvish/i.test(k) ? "בין-עירוני" : /ironi|city/i.test(k) ? "עירוני" : /meshulav|comb/i.test(k) ? "משולב" : "";
+        const unit = /km_l|kml/i.test(k) ? "ק״מ לליטר" : /100/.test(k) ? "ליטר ל-100 ק״מ" : "";
+        return { key: k, where, unit, value: val(spec, k) };
+      });
+  }
+  function findTank(spec) {
+    if (!spec) return null;
+    const k = keysOf(spec).find((k) => /meihal|mechal|mekhal|tank|kibolet_delek/i.test(k));
+    return k ? val(spec, k) : null;
+  }
+
+  // ---------- model photo (Wikipedia) ----------
+  const MAKERS_EN = [["מאזדה","Mazda"],["טויוטה","Toyota"],["יונדאי","Hyundai"],["קיה","Kia"],["סקודה","Skoda"],["פולקסווגן","Volkswagen"],["ניסאן","Nissan"],["מיצובישי","Mitsubishi"],["סוזוקי","Suzuki"],["הונדה","Honda"],["סובארו","Subaru"],["שברולט","Chevrolet"],["פורשה","Porsche"],["פורד","Ford"],["רנו","Renault"],["פיג","Peugeot"],["סיטרואן","Citroen"],["אופל","Opel"],["ב.מ.וו","BMW"],["ב מ וו","BMW"],["במוו","BMW"],["מרצדס","Mercedes-Benz"],["אאודי","Audi"],["וולוו","Volvo"],["סיאט","SEAT"],["קופרה","Cupra"],["דאצ","Dacia"],["פיאט","Fiat"],["לקסוס","Lexus"],["טסלה","Tesla"],["ג'יפ","Jeep"],["גיפ","Jeep"],["בי.ווי.די","BYD"],["בי וואי די","BYD"],["ג'ילי","Geely"],["צ'רי","Chery"],["אם.ג'י","MG"],["אמ.גי","MG"],["לנד רובר","Land Rover"],["מיני","Mini"],["איסוזו","Isuzu"],["דייהטסו","Daihatsu"],["אלפא","Alfa Romeo"],["ג'נסיס","Genesis"],["אינפיניטי","Infiniti"],["סאנגיונג","SsangYong"],["קרייזלר","Chrysler"],["דודג","Dodge"],["קאדילק","Cadillac"],["גרייט וול","Great Wall"],["ליפמוטור","Leapmotor"],["אקספנג","XPeng"],["זיקר","Zeekr"],["ג'אקו","Jaecoo"],["אומודה","Omoda"],["לינק","Lynk & Co"],["פולסטאר","Polestar"],["סמארט","Smart"],["דונגפנג","Dongfeng"],["פוטון","Foton"]];
+  const makerEn = (heb) => (MAKERS_EN.find(([h]) => heb.includes(h)) || [, ""])[1];
+
+  let photoToken = 0;
+  async function showModelPhoto(rec, caption) {
+    const token = ++photoToken;
+    const box = $("#modelPhoto");
+    box.hidden = true;
+    const en = makerEn(val(rec, "tozeret_nm") || "");
+    const name = (val(rec, "kinuy_mishari") || "").replace(new RegExp(en, "i"), "").trim();
+    if (!en && !/[a-z]/i.test(name)) return;
+    const query = `${en} ${name}`.trim();
+    try {
+      const u = new URL("https://en.wikipedia.org/w/api.php");
+      Object.entries({ action: "query", format: "json", origin: "*", generator: "search", gsrsearch: query + " car",
+        gsrnamespace: "0", gsrlimit: "4", prop: "pageimages", piprop: "thumbnail", pithumbsize: "900" })
+        .forEach(([k, v]) => u.searchParams.set(k, v));
+      const j = await (await fetch(u)).json();
+      const pages = Object.values(j?.query?.pages || {}).sort((a, b) => a.index - b.index);
+      const hit = pages.find((p) => p.thumbnail?.source);
+      if (!hit || token !== photoToken) return;
+      const img = $("#modelImg");
+      img.onload = () => { if (token === photoToken) box.hidden = false; };
+      img.alt = caption;
+      img.src = hit.thumbnail.source;
+      $("#modelCap").textContent = caption;
+    } catch (_) {}
+  }
+
+  // ---------- OCR ----------
+  let worker = null;
+  async function getWorker(onProgress) {
+    if (worker) return worker;
+    worker = await Tesseract.createWorker("eng", 1, { logger: (m) => { if (m.status === "recognizing text") onProgress(m.progress); } });
+    await worker.setParameters({ tessedit_char_whitelist: "0123456789-. ", tessedit_pageseg_mode: "11" });
+    return worker;
+  }
+  function prepImage(file) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const s = Math.min(1, 1800 / Math.max(img.width, img.height));
+        const c = document.createElement("canvas");
+        c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+        const ctx = c.getContext("2d");
+        ctx.drawImage(img, 0, 0, c.width, c.height);
+        const d = ctx.getImageData(0, 0, c.width, c.height), p = d.data;
+        for (let i = 0; i < p.length; i += 4) {
+          let g = 0.3 * p[i] + 0.59 * p[i + 1] + 0.11 * p[i + 2];
+          g = Math.max(0, Math.min(255, (g - 128) * 1.6 + 128));
+          p[i] = p[i + 1] = p[i + 2] = g;
+        }
+        ctx.putImageData(d, 0, 0);
+        resolve(c);
+      };
+      img.onerror = reject;
+      img.src = URL.createObjectURL(file);
+    });
+  }
+  function extractCandidates(text) {
+    const found = [];
+    const add = (d) => { if ((d.length === 7 || d.length === 8) && !found.includes(d)) found.push(d); };
+    for (const m of text.matchAll(/\d{2,3}[-\s.]{0,2}\d{2,3}[-\s.]{0,2}\d{2,3}/g)) add(m[0].replace(/\D/g, ""));
+    for (const m of text.matchAll(/\d{7,8}/g)) add(m[0]);
+    return found;
+  }
+
+  // ---------- states ----------
+  let currentPhoto = null;
+  const snap = () => currentPhoto ? `<img class="snap" src="${currentPhoto}" alt="התמונה שצולמה">` : "";
+
+  function status(text, progress = null) {
+    out.innerHTML = `${snap()}
+      <div class="status" role="status">
+        <div class="spinner"></div>
+        <div style="flex:1;display:grid;gap:8px;min-width:0">
+          <span>${esc(text)}</span>
+          ${progress !== null ? `<div class="bar"><i style="width:${Math.round(progress * 100)}%"></i></div>` : ""}
+        </div>
+      </div>`;
+  }
+
+  async function handleFile(file) {
+    if (!file) return;
+    currentPhoto = URL.createObjectURL(file);
+    $("#modelPhoto").hidden = true;
+    status("טוען זיהוי טקסט…", 0);
+    let candidates = [];
+    try {
+      const canvas = await prepImage(file);
+      const w = await getWorker((p) => status("קורא את לוחית הרישוי…", p));
+      status("קורא את לוחית הרישוי…", 0);
+      const { data } = await w.recognize(canvas);
+      candidates = extractCandidates(data.text || "");
+    } catch (e) {
+      out.innerHTML = `${snap()}<div class="status err" role="alert"><span>לא הצלחתי לקרוא את התמונה. נסו תמונה אחרת או הקלידו את המספר.</span></div>`;
+      return;
+    }
+    if (!candidates.length) return notFound([]);
+    await searchCandidates(candidates.slice(0, 6));
+  }
+
+  async function searchCandidates(cands) {
+    status("מחפש במאגר משרד התחבורה…");
+    try {
+      for (const d of cands) {
+        const rec = await lookupVehicle(d);
+        if (rec) { showReport(d, rec); return; }
+      }
+      notFound(cands);
+    } catch (e) {
+      out.innerHTML = `
+        <div class="status err" role="alert">
+          <div style="display:grid;gap:10px;flex:1">
+            <span>לא הצלחתי להתחבר למאגר של משרד התחבורה. בדקו שיש אינטרנט ונסו שוב.</span>
+            <span class="foot">פרטים: ${esc(e && e.message || e)}</span>
+            <button class="btn-ghost" id="retry" type="button">נסה שוב</button>
+          </div>
+        </div>`;
+      $("#retry").onclick = () => searchCandidates(cands);
+    }
+  }
+
+  function notFound(cands) {
+    out.innerHTML = `${snap()}
+      <div class="card">
+        <h3>${cands.length ? "המספר לא נמצא במאגר" : "לא זוהתה לוחית בתמונה"}</h3>
+        <p>${cands.length ? "ייתכן שהמספר נקרא לא נכון. בחרו את המספר הנכון או תקנו אותו בשדה למעלה." : "צלמו קרוב יותר וישר מול הלוחית, או הקלידו את המספר בשדה למעלה."}</p>
+        ${cands.length ? `<div class="chips" style="margin-top:8px">${cands.map((c) => `<button class="chip" data-p="${c}" type="button">${fmtPlate(c)}</button>`).join("")}</div>` : ""}
+      </div>`;
+    out.querySelectorAll(".chip").forEach((b) => b.onclick = () => { $("#plateInput").value = fmtPlate(b.dataset.p); $("#plateInput").focus(); });
+    if (cands[0]) $("#plateInput").value = fmtPlate(cands[0]);
+  }
+
+  // ---------- report ----------
+  const google = (q) => "https://www.google.com/search?q=" + encodeURIComponent(q);
+
+  function vinHTML(vin) {
+    if (!vin) return null;
+    const shown = vin.slice(0, 5), hidden = Math.max(0, vin.length - 5);
+    return `<span class="vin"><code>${esc(shown)}<i>${"•".repeat(hidden)}</i></code>
+      <button class="lock" type="button" id="vinUnlock">${svg.lock}לשילדה המלאה</button></span>`;
+  }
+
+  function emissionHTML(level) {
+    const n = Number(level);
+    if (!(n >= 1 && n <= 15)) return "";
+    const label = n <= 4 ? ["נמוכה מאוד", "ok"] : n <= 8 ? ["נמוכה", "ok"] : n <= 11 ? ["בינונית", ""] : ["גבוהה", "no"];
+    const cells = Array.from({ length: 15 }, (_, i) => {
+      const hue = 140 - (i / 14) * 140;
+      return `<i style="background:hsl(${hue} 70% 45%)" class="${i + 1 === n ? "on" : ""}"></i>`;
+    }).join("");
+    return `<section class="card">
+        <h3>רמת זיהום</h3>
+        <div class="eco-top"><b class="num">${n}<small style="font-size:16px;color:var(--muted)">/15</small></b><span class="${label[1]}">זיהום ${label[0]}</span></div>
+        <div class="scale" aria-hidden="true">${cells}</div>
+        <div class="scale-legend"><span>1 · הכי נקי</span><span>15 · הכי מזהם</span></div>
+        <p class="foot">קבוצת זיהום לפי משרד התחבורה ומשרד הגנת הסביבה.</p>
+      </section>`;
+  }
+
+  function showReport(digits, rec) {
+    const maker = cleanMaker(val(rec, "tozeret_nm"));
+    const model = val(rec, "kinuy_mishari") || val(rec, "degem_nm") || "";
+    const title = [maker, model].filter(Boolean).join(" ") || "רכב";
+    const year = val(rec, "shnat_yitzur");
+    const kind = { P: "רכב פרטי", M: "רכב מסחרי" }[String(rec.sug_degem || "").toUpperCase()] || "רכב";
+    const sub = [year, val(rec, "tzeva_rechev")].filter(Boolean).join(" · ");
+    const test = fmtDate(val(rec, "mivchan_acharon_dt"));
+    const until = toDate(val(rec, "tokef_dt"));
+    const expired = until && until < new Date();
+    const plate = fmtPlate(digits);
+    const importerLink = (what) => `<a class="note" style="color:var(--il);text-decoration:none" target="_blank" rel="noopener" href="${google(`${title} ${year || ""} מפרט טכני ${what} יבואן`)}">חפש באתר היבואן ↖</a>`;
+
+    addToHistory(digits, title, year);
+    showModelPhoto(rec, [title, year].filter(Boolean).join(" "));
+
+    const rows = [
+      ["יצרן", maker], ["דגם", val(rec, "degem_nm")], ["רמת גימור", val(rec, "ramat_gimur")],
+      ["שנת ייצור", year], ["עלייה לכביש", rec.moed_aliya_lakvish ? monthYear(rec.moed_aliya_lakvish) : null],
+      ["צבע", val(rec, "tzeva_rechev")], ["סוג דלק", val(rec, "sug_delek_nm")], ["דגם מנוע", val(rec, "degem_manoa")],
+      ["בעלות נוכחית", val(rec, "baalut")], ["צמיגים", val(rec, "zmig_kidmi")],
+    ].filter(([, v]) => v);
+    const vin = vinHTML(val(rec, "misgeret"));
+
+    out.innerHTML = `
+      ${snap()}
+      <section class="card title-card">
+        <div class="tags"><span class="tag blue" id="kindTag">${esc(kind)}</span>${val(rec, "sug_delek_nm") ? `<span class="tag">${esc(val(rec, "sug_delek_nm"))}</span>` : ""}</div>
+        <div style="display:grid;gap:4px">
+          <h2>${esc(title)}</h2>
+          ${sub ? `<span class="sub">${esc(sub)}</span>` : ""}
+        </div>
+        <div class="title-row">
+          <div class="plate" aria-label="מספר רישוי ${plate}"><span class="il">IL</span><span class="n">${plate}</span></div>
+          <button class="save" type="button" id="saveBtn">${svg.heart}<span>שמור</span></button>
+        </div>
+      </section>
+
+      <div class="tiles">
+        <section class="card tile">
+          <span class="lbl">טסט אחרון</span>
+          <span class="big" dir="ltr" style="text-align:right">${esc(test || "—")}</span>
+          ${until ? `<span class="note ${expired ? "no" : "ok"}">${expired ? "רישיון פג ב-" : "בתוקף עד "}${fmtDate(val(rec, "tokef_dt"))}</span>` : ""}
+        </section>
+        <section class="card tile" id="handTile">
+          <span class="lbl">יד</span><span class="big">…</span><span class="note">בודק בעלויות</span>
+        </section>
+        <section class="card tile" id="fuelTile">
+          <span class="lbl">צריכת דלק</span><span class="big">…</span><span class="note">נתוני יצרן</span>
+        </section>
+        <section class="card tile" id="tankTile">
+          <span class="lbl">מיכל דלק</span><span class="big">…</span><span class="note">נתוני יצרן</span>
+        </section>
+      </div>
+
+      <section class="card">
+        <h3>פרטי הרכב</h3>
+        <dl class="kv">
+          ${rows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}
+          ${vin ? `<dt>מספר שלדה</dt><dd>${vin}</dd>` : ""}
+        </dl>
+      </section>
+
+      <section class="card" id="specCard" hidden></section>
+      <section class="card" id="ownersCard" hidden></section>
+
+      <section class="card" id="countCard">
+        <h3>כמה יש בישראל</h3>
+        <div class="count"><span>סופר…</span><b></b></div>
+      </section>
+
+      <section class="card">
+        <h3>מחיר בשוק כרגע</h3>
+        <div class="links">
+          <a href="${google(`site:yad2.co.il ${title} ${year || ""}`)}" target="_blank" rel="noopener">מודעות למכירה ביד2</a>
+          <a href="${google(`מחירון לוי יצחק ${title} ${year || ""}`)}" target="_blank" rel="noopener">מחירון לוי יצחק</a>
+        </div>
+        <p class="foot">למחירון אין ממשק ציבורי חינמי, לכן המחיר נפתח בדפדפן.</p>
+      </section>
+
+      ${emissionHTML(val(rec, "kvutzat_zihum"))}
+
+      <p class="foot">מקור: מאגרי משרד התחבורה ב-data.gov.il. הנתונים מתעדכנים מעת לעת.</p>`;
+
+    // save button
+    const saveBtn = $("#saveBtn");
+    const paintSave = () => {
+      const on = isSaved(digits);
+      saveBtn.classList.toggle("on", on);
+      saveBtn.querySelector("span").textContent = on ? "נשמר" : "שמור";
+    };
+    paintSave();
+    saveBtn.onclick = async () => { await toggleSaved(digits, title, year); paintSave(); };
+
+    const vinBtn = $("#vinUnlock");
+    if (vinBtn) vinBtn.onclick = openPaywall;
+
+    // ownership
+    lookupOwners(digits).then((list) => {
+      const tile = $("#handTile"); if (!tile) return;
+      if (list && list.length) {
+        tile.innerHTML = `<span class="lbl">יד</span><span class="big">${list.length}</span><span class="note">לפי רשומות הבעלות</span>`;
+        const card = $("#ownersCard");
+        card.hidden = false;
+        card.innerHTML = `<h3>היסטוריית בעלויות</h3><ol class="owners">${list.map((o, i) =>
+          `<li><span class="hand">יד ${i + 1}</span><span>${esc(o.type)}</span><span class="d">${esc(o.date)}</span></li>`).join("")}</ol>`;
+      } else {
+        tile.innerHTML = `<span class="lbl">יד</span><span class="big">—</span><span class="note">${list ? "אין נתוני בעלות" : "המאגר לא זמין"}</span>`;
+      }
+    }).catch(() => {
+      const tile = $("#handTile");
+      if (tile) tile.innerHTML = `<span class="lbl">יד</span><span class="big">—</span><span class="note">המאגר לא זמין</span>`;
+    });
+
+    // manufacturer specs
+    lookupSpecs(rec).then((spec) => {
+      const fuelTile = $("#fuelTile"), tankTile = $("#tankTile");
+      if (!fuelTile) return;
+      const fuel = findFuel(spec);
+      const main = fuel.find((f) => f.where === "משולב") || fuel[0];
+      fuelTile.innerHTML = main
+        ? `<span class="lbl">צריכת דלק${main.where ? " · " + main.where : ""}</span><span class="big num">${esc(main.value)}${main.unit ? ` <small>${main.unit}</small>` : ""}</span><span class="note">נתוני יצרן</span>`
+        : `<span class="lbl">צריכת דלק</span><span class="big">—</span>${importerLink("צריכת דלק")}`;
+      const tank = findTank(spec);
+      tankTile.innerHTML = tank
+        ? `<span class="lbl">מיכל דלק</span><span class="big num">${esc(tank)} <small>ליטר</small></span><span class="note">נתוני יצרן</span>`
+        : (spec && val(spec, "koah_sus")
+            ? `<span class="lbl">כוח מנוע</span><span class="big num">${esc(val(spec, "koah_sus"))} <small>כ״ס</small></span>${importerLink("נפח מיכל דלק")}`
+            : `<span class="lbl">מיכל דלק</span><span class="big">—</span>${importerLink("נפח מיכל דלק")}`);
+
+      if (!spec) return;
+      if (val(spec, "merkav")) $("#kindTag").textContent = `${kind} · ${val(spec, "merkav")}`;
+      const specRows = SPEC_LABELS.filter(([k]) => val(spec, k)).map(([k, l, u]) => [l, val(spec, k) + (u ? " " + u : "")]);
+      fuel.filter((f) => f !== main).forEach((f) => specRows.push([`צריכה${f.where ? " " + f.where : ""}`, f.value + (f.unit ? " " + f.unit : "")]));
+      if (specRows.length) {
+        const card = $("#specCard");
+        card.hidden = false;
+        card.innerHTML = `<h3>מפרט יצרן</h3><dl class="kv">${specRows.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl>`;
+      }
+    }).catch(() => {});
+
+    // fleet counts
+    countSame(rec).then((c) => {
+      const card = $("#countCard"); if (!card) return;
+      card.innerHTML = `<h3>כמה יש בישראל</h3>
+        <div class="count"><span>אותו דגם ושנה (${esc(year || "—")})</span><b>${nf(c.exact)}</b></div>
+        <div class="count"><span>${esc(title)}, כל השנים</span><b>${nf(c.family)}</b></div>
+        <p class="foot">רכבים פעילים הרשומים במשרד התחבורה</p>`;
+    });
+  }
+
+  // ---------- sheets ----------
+  function openSheet(html) {
+    const host = $("#sheetHost");
+    host.innerHTML = `<div class="sheet-back" id="sheetBack"><div class="sheet" role="dialog" aria-modal="true"><div class="grab"></div>${html}</div></div>`;
+    $("#sheetBack").onclick = (e) => { if (e.target.id === "sheetBack") closeSheet(); };
+    host.querySelectorAll("[data-close]").forEach((b) => b.onclick = closeSheet);
+  }
+  function closeSheet() { $("#sheetHost").innerHTML = ""; }
+
+  function openPaywall() {
+    openSheet(`
+      <h2>מספר שלדה מלא</h2>
+      <p>מספר השלדה (VIN) המלא מאפשר לבדוק היסטוריית תאונות, יבוא וריקולים. החשיפה עולה ${esc(VIN_PRICE)}.</p>
+      ${VIN_PAYMENT_URL
+        ? `<a class="primary" style="display:grid;place-items:center;text-decoration:none" href="${esc(VIN_PAYMENT_URL)}" target="_blank" rel="noopener">לתשלום ${esc(VIN_PRICE)}</a>`
+        : `<button class="primary" type="button" disabled>התשלום יופעל בקרוב</button>`}
+      <button class="textbtn" type="button" data-close>לא עכשיו</button>`);
+  }
+
+  // ---------- accounts (Supabase) ----------
+  const sb = (SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase) ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+  let session = null;
+  let cloud = []; // [{plate,title,year,saved,searched_at}]
+
+  // local fallback (this device only)
+  const LKEY = "carcheck.items";
+  const loadLocal = () => { try { return JSON.parse(localStorage.getItem(LKEY) || "[]"); } catch (_) { return []; } };
+  const saveLocal = (list) => { try { localStorage.setItem(LKEY, JSON.stringify(list.slice(0, 40))); } catch (_) {} };
+  const items = () => session ? cloud : loadLocal();
+  const isSaved = (d) => items().some((i) => i.plate === d && i.saved);
+
+  async function upsertItem(item) {
+    if (session) {
+      const row = { user_id: session.user.id, plate: item.plate, title: item.title, year: item.year, saved: item.saved, searched_at: new Date().toISOString() };
+      const { error } = await sb.from("car_history").upsert(row, { onConflict: "user_id,plate" });
+      if (error) { console.warn(error); return; }
+      cloud = [row, ...cloud.filter((c) => c.plate !== item.plate)];
+    } else {
+      saveLocal([{ ...item, searched_at: new Date().toISOString() }, ...loadLocal().filter((c) => c.plate !== item.plate)]);
+    }
+    renderHistory();
+  }
+  function addToHistory(plate, title, year) {
+    const prev = items().find((i) => i.plate === plate);
+    upsertItem({ plate, title, year, saved: prev ? !!prev.saved : false });
+  }
+  async function toggleSaved(plate, title, year) {
+    if (!session && sb) {
+      openLogin("כדי לשמור רכבים בחשבון ולראות אותם מכל מכשיר, התחברו או הירשמו.");
+      return;
+    }
+    await upsertItem({ plate, title, year, saved: !isSaved(plate) });
+  }
+  async function loadCloud() {
+    if (!session) { cloud = []; return; }
+    const { data, error } = await sb.from("car_history").select("plate,title,year,saved,searched_at").order("searched_at", { ascending: false }).limit(50);
+    cloud = error ? [] : data;
+  }
+
+  let historyMode = "recent";
+  function renderHistory() {
+    const all = items();
+    const saved = all.filter((i) => i.saved);
+    const list = historyMode === "saved" ? saved : all;
+    $("#historyBox").hidden = all.length === 0;
+    $("#historyTitle").textContent = historyMode === "saved" ? "רכבים שמורים" : (session ? "ההיסטוריה שלי" : "חיפושים אחרונים");
+    const act = $("#historyAction");
+    act.hidden = !saved.length && historyMode !== "saved";
+    act.textContent = historyMode === "saved" ? "הצג הכל" : `שמורים (${saved.length})`;
+    $("#history").innerHTML = list.slice(0, 20).map((h) =>
+      `<button class="hchip" type="button" data-d="${esc(h.plate)}"><b>${h.saved ? "♥ " : ""}${esc(h.title || "רכב")}${h.year ? " " + esc(h.year) : ""}</b><span>${fmtPlate(h.plate)}</span></button>`).join("");
+    $("#history").querySelectorAll("button").forEach((b) => b.onclick = () => {
+      currentPhoto = null; $("#plateInput").value = fmtPlate(b.dataset.d); searchCandidates([b.dataset.d]);
+    });
+  }
+  $("#historyAction").onclick = () => { historyMode = historyMode === "saved" ? "recent" : "saved"; renderHistory(); };
+
+  function paintAccount() {
+    if (session) {
+      const email = session.user.email || "";
+      $("#avatar").textContent = (email[0] || "?").toUpperCase();
+      $("#accountLabel").textContent = "החשבון שלי";
+    } else {
+      $("#avatar").innerHTML = '<svg class="icon" viewBox="0 0 24 24" style="width:16px;height:16px"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>';
+      $("#accountLabel").textContent = "התחברות";
+    }
+  }
+
+  function openLogin(reason) {
+    if (!sb) {
+      openSheet(`
+        <h2>חשבונות משתמשים</h2>
+        <p>ההרשמה עוד לא הופעלה באתר הזה. בינתיים ההיסטוריה והרכבים השמורים נשמרים במכשיר הזה בלבד.</p>
+        <button class="primary" type="button" data-close>הבנתי</button>`);
+      return;
+    }
+    let mode = "in";
+    openSheet(`
+      <h2 id="loginTitle">התחברות</h2>
+      ${reason ? `<p>${esc(reason)}</p>` : `<p>שמרו רכבים וראו את היסטוריית החיפושים שלכם מכל מכשיר.</p>`}
+      <div class="seg" role="tablist">
+        <button type="button" class="on" id="tabIn">התחברות</button>
+        <button type="button" id="tabUp">הרשמה</button>
+      </div>
+      <form id="loginForm" style="display:grid;gap:12px">
+        <div class="field"><label for="email">אימייל</label><input id="email" type="email" autocomplete="email" required></div>
+        <div class="field"><label for="pass">סיסמה</label><input id="pass" type="password" autocomplete="current-password" minlength="6" required></div>
+        <span class="msg" id="loginMsg" role="status"></span>
+        <button class="primary" type="submit" id="loginGo">התחבר</button>
+      </form>
+      <button class="textbtn" type="button" data-close>ביטול</button>`);
+    const setMode = (m) => {
+      mode = m;
+      $("#tabIn").classList.toggle("on", m === "in");
+      $("#tabUp").classList.toggle("on", m === "up");
+      $("#loginTitle").textContent = m === "in" ? "התחברות" : "הרשמה";
+      $("#loginGo").textContent = m === "in" ? "התחבר" : "צור חשבון";
+      $("#pass").autocomplete = m === "in" ? "current-password" : "new-password";
+      $("#loginMsg").textContent = "";
+    };
+    $("#tabIn").onclick = () => setMode("in");
+    $("#tabUp").onclick = () => setMode("up");
+    $("#loginForm").onsubmit = async (e) => {
+      e.preventDefault();
+      const email = $("#email").value.trim(), password = $("#pass").value;
+      const msg = $("#loginMsg"), go = $("#loginGo");
+      go.disabled = true; msg.className = "msg"; msg.textContent = "רגע…";
+      try {
+        if (mode === "in") {
+          const { error } = await sb.auth.signInWithPassword({ email, password });
+          if (error) throw error;
+          closeSheet();
+        } else {
+          const { data, error } = await sb.auth.signUp({ email, password });
+          if (error) throw error;
+          if (data.session) closeSheet();
+          else { msg.className = "msg ok"; msg.textContent = "שלחנו מייל אימות. אחרי האישור אפשר להתחבר."; setMode("in"); msg.className = "msg ok"; msg.textContent = "שלחנו מייל אימות. אחרי האישור אפשר להתחבר."; }
+        }
+      } catch (err) {
+        msg.className = "msg no";
+        const t = String(err.message || err);
+        msg.textContent = /Invalid login/i.test(t) ? "האימייל או הסיסמה לא נכונים."
+          : /already registered/i.test(t) ? "האימייל הזה כבר רשום. נסו להתחבר."
+          : /Email not confirmed/i.test(t) ? "צריך לאשר את המייל שנשלח אליכם."
+          : /Password/i.test(t) ? "הסיסמה צריכה להכיל לפחות 6 תווים."
+          : "משהו השתבש: " + t;
+      } finally { go.disabled = false; }
+    };
+  }
+
+  function openAccount() {
+    openSheet(`
+      <h2>החשבון שלי</h2>
+      <p dir="ltr" style="text-align:right">${esc(session.user.email || "")}</p>
+      <p>שמורים: ${cloud.filter((c) => c.saved).length} · בהיסטוריה: ${cloud.length}</p>
+      <button class="primary" type="button" id="logout" style="background:var(--fg);color:var(--bg)">התנתקות</button>
+      <button class="textbtn" type="button" data-close>סגור</button>`);
+    $("#logout").onclick = async () => { await sb.auth.signOut(); closeSheet(); };
+  }
+
+  $("#accountBtn").onclick = () => session ? openAccount() : openLogin();
+
+  async function syncLocalToCloud() {
+    const local = loadLocal();
+    if (!local.length) return;
+    const rows = local.map((i) => ({ user_id: session.user.id, plate: i.plate, title: i.title, year: i.year, saved: !!i.saved, searched_at: i.searched_at || new Date().toISOString() }));
+    const { error } = await sb.from("car_history").upsert(rows, { onConflict: "user_id,plate" });
+    if (!error) saveLocal([]);
+  }
+
+  if (sb) {
+    sb.auth.onAuthStateChange(async (_evt, s) => {
+      session = s;
+      if (session) { await syncLocalToCloud(); await loadCloud(); }
+      paintAccount(); renderHistory();
+    });
+    sb.auth.getSession().then(({ data }) => { session = data.session; paintAccount(); });
+  }
+
+  // ---------- wiring ----------
+  $("#cam").onchange = (e) => { handleFile(e.target.files[0]); e.target.value = ""; };
+  $("#gal").onchange = (e) => { handleFile(e.target.files[0]); e.target.value = ""; };
+  $("#searchForm").onsubmit = (e) => {
+    e.preventDefault();
+    const d = $("#plateInput").value.replace(/\D/g, "");
+    const hint = $("#hint");
+    if (d.length < 5 || d.length > 8) { hint.textContent = "מספר רישוי צריך להכיל 5 עד 8 ספרות."; hint.classList.add("err"); return; }
+    hint.textContent = "אפשר גם להקליד מספר. הנתונים מגיעים ממאגרי משרד התחבורה."; hint.classList.remove("err");
+    $("#plateInput").value = fmtPlate(d);
+    $("#plateInput").blur();
+    currentPhoto = null;
+    searchCandidates([d]);
+  };
+  paintAccount();
+  renderHistory();
+})();
+</script>
+</body>
+</html>

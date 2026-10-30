@@ -2600,7 +2600,7 @@ html[dir="ltr"] .links a::after { content: "↗"; }
           if (error) throw error;
           closeSheet();
         } else {
-          const { data, error } = await sb.auth.signUp({ email, password });
+          const { data, error } = await sb.auth.signUp({ email, password, options: { emailRedirectTo: location.origin + location.pathname } });
           if (error) throw error;
           if (data.session) closeSheet();
           else { msg.className = "msg ok"; msg.textContent = "שלחנו מייל אימות. אחרי האישור אפשר להתחבר."; setMode("in"); msg.className = "msg ok"; msg.textContent = "שלחנו מייל אימות. אחרי האישור אפשר להתחבר."; }

@@ -534,11 +534,6 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 @media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 2.4s; } .sheet { animation: none; } .shoot { transition: none; } }
 
 
-.faults { display: grid; gap: 10px; margin-top: 4px; }
-.fault-row { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center; font-size: 15px; }
-.fault-row b { font-size: 14px; }
-.fault-bar { grid-column: 1 / -1; display: block; height: 8px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
-.fault-bar i { display: block; height: 100%; border-radius: 99px; background: var(--warn); }
 .loan-link { justify-self: start; font-weight: 700; font-size: 14px; color: var(--il); text-decoration: none; }
 .loan-link::after { content: " ←"; }
 html[dir="ltr"] .loan-link::after { content: " →"; }
@@ -1384,7 +1379,7 @@ html[dir="ltr"] .links a::after { content: "↗"; }
         <button type="button" role="tab" data-t="secPrice">מחיר וביטוח</button>
         <button type="button" role="tab" data-t="secCost">עלות חודשית</button>
         <button type="button" role="tab" data-t="secLoan">הלוואה</button>
-        <button type="button" role="tab" data-t="secReviews">תקלות וחוות דעת</button>
+        ${sb ? `<button type="button" role="tab" data-t="secReviews">חוות דעת</button>` : ""}
       </nav>
 
       <div class="panel" id="secOverview" data-sec>
@@ -1466,8 +1461,7 @@ html[dir="ltr"] .links a::after { content: "↗"; }
       </section>
 
       <section class="card group panel" id="secReviews" data-sec hidden>
-        <h2 class="sec-title">חוות דעת ותקלות</h2>
-        <div class="block" id="faultBox"><h3>תקלות נפוצות לדגם</h3><p class="foot">בודק תלונות של בעלי רכב…</p></div>
+        <h2 class="sec-title">חוות דעת</h2>
         <div id="revBox"><p class="foot">טוען חוות דעת…</p></div>
       </section>
 
@@ -1700,7 +1694,6 @@ html[dir="ltr"] .links a::after { content: "↗"; }
 
     // safety stars + reviews
     loadSafety(rec, seq);
-    loadFaults(rec, seq);
     currentModel = { key: `${rec.tozeret_cd ?? maker}|${val(rec, "kinuy_mishari") || val(rec, "degem_nm") || ""}`, title, year };
     loadReviews();
 
@@ -1991,71 +1984,6 @@ html[dir="ltr"] .links a::after { content: "↗"; }
       }
     }
     return null;
-  }
-
-  // Owner complaints filed with the US government, grouped by the part of the car they are about.
-  const FAULT_PARTS = [
-    ["ENGINE", "מנוע וקירור"], ["POWER TRAIN", "תיבת הילוכים והנעה"], ["ELECTRICAL", "מערכת חשמל"],
-    ["HYBRID PROPULSION", "מערכת הנעה היברידית או חשמלית"], ["ELECTRIC PROPULSION", "מערכת הנעה היברידית או חשמלית"],
-    ["FUEL", "מערכת דלק"], ["SERVICE BRAKES", "בלמים"], ["PARKING BRAKE", "בלם חניה"], ["STEERING", "היגוי"],
-    ["SUSPENSION", "מתלים"], ["AIR BAGS", "כריות אוויר"], ["SEAT BELTS", "חגורות בטיחות"], ["SEATS", "מושבים"],
-    ["STRUCTURE", "שלדה ומרכב"], ["VISIBILITY", "ראות, מגבים ומראות"], ["EXTERIOR LIGHTING", "תאורה חיצונית"],
-    ["INTERIOR LIGHTING", "תאורה פנימית"], ["LATCHES", "מנעולים ודלתות"], ["VEHICLE SPEED CONTROL", "בקרת שיוט ודוושת גז"],
-    ["WHEELS", "גלגלים"], ["TIRES", "צמיגים"], ["FORWARD COLLISION", "מערכת למניעת התנגשות"], ["LANE DEPARTURE", "סטייה מנתיב"],
-    ["BACK OVER", "מצלמה וחיישני רוורס"], ["ELECTRONIC STABILITY", "בקרת יציבות"], ["COMMUNICATION", "מולטימדיה ותקשורת"],
-    ["EQUIPMENT", "אבזור"], ["CHILD SEAT", "מושב בטיחות לילד"], ["TRAILER", "וו גרירה"], ["UNKNOWN", "אחר"],
-  ];
-  const faultPart = (c) => (FAULT_PARTS.find(([k]) => c.startsWith(k)) || [, "אחר"])[1];
-
-  async function lookupFaults(rec) {
-    const mt = nhtsaMatcher(rec); if (!mt) return null;
-    const { make, year, pick } = mt;
-    const base = "https://api.nhtsa.gov";
-    for (const y of [year, year - 1, year + 1]) {
-      const models = await anyJSON(`${base}/products/vehicle/models?modelYear=${y}&make=${encodeURIComponent(make)}&issueType=c`);
-      const model = pick((models?.results || models?.Results || []).map((m) => m.model || m.Model).filter(Boolean));
-      if (!model) continue;
-      const r = await anyJSON(`${base}/complaints/complaintsByVehicle?make=${encodeURIComponent(make)}&model=${encodeURIComponent(model)}&modelYear=${y}`);
-      const list = r?.results || r?.Results || [];
-      if (!list.length) continue;
-      const parts = new Map();
-      let crash = 0, fire = 0;
-      for (const c of list) {
-        if (c.crash) crash++;
-        if (c.fire) fire++;
-        // a complaint can name several parts; "SERVICE BRAKES, HYDRAULIC" is one name, so split only on commas without a space
-        const seen = new Set(String(c.components || "UNKNOWN").split(/,(?! )/).map((x) => faultPart(x.trim().toUpperCase())));
-        for (const part of seen) parts.set(part, (parts.get(part) || 0) + 1);
-      }
-      const top = [...parts.entries()].sort((a, b) => b[1] - a[1]);
-      return { make, model, year: y, nearYear: y !== year ? y : null, total: list.length, crash, fire, top };
-    }
-    return { none: true };
-  }
-
-  function loadFaults(rec, seq) {
-    lookupFaults(rec).then((f) => {
-      if (seq !== reportSeq) return;
-      const box = $("#faultBox"); if (!box) return;
-      if (!f) { box.innerHTML = `<h3>תקלות נפוצות לדגם</h3><p class="foot">אין נתוני תקלות לדגם הזה.</p>`; return; }
-      if (f.none) { box.innerHTML = `<h3>תקלות נפוצות לדגם</h3><p class="foot">לא נמצאו תלונות לדגם הזה במאגר האמריקאי. בדרך כלל זה אומר שהדגם לא נמכר בארה״ב.</p>`; return; }
-      const max = f.top[0][1];
-      const rows = f.top.filter(([p]) => p !== "אחר").slice(0, 6).map(([p, n]) => `
-        <div class="fault-row"><span>${p}</span><b class="num" dir="ltr">${Math.round(n / f.total * 100)}%</b>
-          <i class="fault-bar" aria-hidden="true"><i style="width:${Math.max(4, n / max * 100).toFixed(0)}%"></i></i></div>`).join("");
-      box.innerHTML = `
-        <h3>תקלות נפוצות לדגם</h3>
-        <p class="foot">${f.total.toLocaleString("he-IL")} תלונות של בעלי רכב בארה״ב על ${esc(f.make)} ${esc(f.model)} ${f.year}.${f.nearYear ? ` אין תלונות לשנת ${esc(val(rec, "shnat_yitzur"))}, לכן מוצגת שנת ${f.nearYear}.` : ""}</p>
-        <div class="faults">${rows}</div>
-        ${f.crash || f.fire ? `<p class="foot">${f.crash ? `${f.crash} מהתלונות דיווחו על תאונה` : ""}${f.crash && f.fire ? ", " : ""}${f.fire ? `${f.fire} על שריפה` : ""}.</p>` : ""}
-        <details class="why"><summary>מה זה אומר?</summary>
-          <p>אחוז מהתלונות שנגעו לכל חלק ברכב. תלונה אחת יכולה לגעת בכמה חלקים. מספר תלונות גבוה בחלק מסוים מראה על מה כדאי להקפיד בבדיקה במכון.</p>
-          <p>אלה דיווחים של בעלי רכב לרשות הבטיחות בדרכים האמריקאית (NHTSA), ולא נבדקו על ידה. הגרסה הישראלית יכולה להיות שונה.</p>
-        </details>`;
-    }).catch(() => {
-      if (seq !== reportSeq) return;
-      const box = $("#faultBox"); if (box) box.innerHTML = `<h3>תקלות נפוצות לדגם</h3><p class="foot">לא הצלחתי לטעון תקלות כרגע.</p>`;
-    });
   }
 
   // Fixed-payment car loan (Spitzer), with an optional balloon repaid at the end.

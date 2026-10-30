@@ -547,6 +547,8 @@
     "גיר": ["Gear", "Gear", "غير", "Gear"],
     "לפני שעה": ["an hour ago", "час назад", "قبل ساعة", "hace una hora"],
     "עכשיו": ["just now", "только что", "الآن", "ahora"],
+    "איזה מהם הרכב שצילמת?": ["Which one is the car you photographed?", "Какая из них ваша машина?", "أيّها السيارة التي صوّرتها؟", "¿Cuál es el auto que fotografiaste?"],
+    "לא הצלחתי לקרוא את המספר בוודאות, ויש כמה אפשרויות שקיימות במאגר": ["I couldn't read the number for sure, and several options exist in the records", "Не удалось точно прочитать номер, в базе есть несколько вариантов", "لم أتمكن من قراءة الرقم بدقة، وهناك عدة خيارات موجودة في السجلات", "No pude leer el número con seguridad y hay varias opciones en los registros"],
     // ---- tips page ----
     "טיפים לקניית רכב יד שנייה": ["Tips for buying a used car", "Советы по покупке б/у машины", "نصائح لشراء سيارة مستعملة", "Consejos para comprar un auto usado"],
     "מה לבדוק, מה לבקש מהמוכר ואיך לסגור עסקה בלי הפתעות": ["What to check, what to ask the seller and how to close the deal without surprises", "Что проверить, что спросить у продавца и как заключить сделку без сюрпризов", "ماذا تفحص وماذا تطلب من البائع وكيف تُتمّ الصفقة دون مفاجآت", "Qué revisar, qué pedir al vendedor y cómo cerrar el trato sin sorpresas"],

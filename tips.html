@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>טיפים לקניית רכב · AutoCars</title>
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;800&display=swap">
+<style>
+/* Layout: one reading column of collapsible stages, in the order a purchase actually happens. */
+:root {
+  --bg: #eef1f6; --surface: #ffffff; --surface-2: #f3f5f9; --fg: #10141b; --muted: #5b6473; --line: #dde2ea;
+  --brand: #e3141b; --good: #128a49; --warn: #c97a00; --plate: #ffcc00;
+  --font: "Rubik", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #0b0e13; --surface: #151a22; --surface-2: #1c222c; --fg: #eef1f6; --muted: #8e98a8; --line: #262d39; --brand: #ff3b3b; --good: #3fcf7d; --warn: #f2a93b; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --bg: #0b0e13; --surface: #151a22; --surface-2: #1c222c; --fg: #eef1f6; --muted: #8e98a8; --line: #262d39; --brand: #ff3b3b; --good: #3fcf7d; --warn: #f2a93b; color-scheme: dark; }
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--fg); font: 400 16px/1.65 var(--font); padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 96px); }
+header { background: #000; color: #fff; padding-top: env(safe-area-inset-top, 0px); }
+.in { max-width: 720px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header .in { padding-block: 22px 20px; display: grid; gap: 6px; }
+header a { color: #fff; opacity: .75; text-decoration: none; font-size: 14px; justify-self: start; }
+header h1 { margin: 0; font-size: 30px; font-weight: 800; line-height: 1.15; text-wrap: balance; }
+header p { margin: 0; color: #b8c0cc; }
+main .in { padding-block: 18px; display: grid; gap: 12px; }
+.stage { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; }
+.stage > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 12px; padding: 16px; }
+.stage > summary::-webkit-details-marker { display: none; }
+.stage > summary::after { content: "▾"; margin-inline-start: auto; color: var(--muted); transition: transform .2s; }
+.stage[open] > summary::after { transform: rotate(180deg); }
+.num { flex: none; width: 34px; height: 34px; border-radius: 10px; background: var(--fg); color: var(--bg); display: grid; place-items: center; font-weight: 800; }
+.stage h2 { margin: 0; font-size: 18px; font-weight: 700; }
+.stage h2 small { display: block; color: var(--muted); font-size: 13px; font-weight: 400; }
+.body { padding: 0 16px 16px; display: grid; gap: 10px; }
+.body p { margin: 0; }
+ul.check { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+ul.check li { display: grid; grid-template-columns: 22px 1fr; gap: 8px; align-items: start; }
+ul.check li::before { content: "✓"; width: 22px; height: 22px; border-radius: 6px; background: var(--surface-2); color: var(--good); display: grid; place-items: center; font-weight: 800; font-size: 13px; margin-top: 2px; }
+ul.check.warn li::before { content: "!"; color: var(--warn); }
+.note { background: var(--surface-2); border-radius: 12px; padding: 12px 14px; font-size: 15px; }
+.cta { display: flex; justify-content: center; align-items: center; gap: 8px; min-height: 52px; border-radius: 14px; background: var(--plate); color: #0d0d0d; font-weight: 800; text-decoration: none; border: 3px solid #0d0d0d; }
+:focus-visible { outline: 3px solid #1f4fd1; outline-offset: 2px; }
+.foot { color: var(--muted); font-size: 13px; text-align: center; }
+.bottom-nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; display: grid; grid-template-columns: repeat(4, 1fr); background: var(--surface); border-top: 1px solid var(--line);
+  padding: 6px max(8px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px)); }
+.bottom-nav a { display: grid; justify-items: center; gap: 3px; padding: 6px 4px; color: var(--muted); font: 600 12px/1.2 var(--font); text-decoration: none; border-radius: 12px; }
+.bottom-nav a.on { color: var(--fg); }
+.bottom-nav a.on svg { color: var(--brand); }
+.bottom-nav svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+@media (min-width: 960px) { .bottom-nav { left: 50%; right: auto; bottom: 16px; transform: translateX(-50%); width: 520px; border: 1px solid var(--line); border-radius: 20px; padding: 6px; } }
+@media (prefers-reduced-motion: reduce) { .stage > summary::after { transition: none; } }
+html[dir="ltr"] body { text-align: left; }
+</style>
+</head>
+<body>
+<header><div class="in">
+  <a href="./">→ חזרה ל-AutoCars</a>
+  <h1>טיפים לקניית רכב יד שנייה</h1>
+  <p>מה לבדוק, מה לבקש מהמוכר ואיך לסגור עסקה בלי הפתעות.</p>
+</div></header>
+
+<main><div class="in">
+
+  <details class="stage" open>
+    <summary><span class="num">1</span><h2>לפני שנוסעים לראות את הרכב<small>בודקים מהבית, בחינם</small></h2></summary>
+    <div class="body">
+      <ul class="check">
+        <li>בודקים את מספר הרישוי באפליקציה: יד, עבר ליסינג או השכרה, ריקולים פתוחים, ביטול סופי, יבוא אישי ותוקף הרישיון.</li>
+        <li>משווים את הקילומטראז׳ במודעה לקילומטראז׳ שדווח בטסט האחרון. אם המודעה מראה פחות, זה סימן אזהרה רציני.</li>
+        <li>בודקים כמה רכבים דומים מבקשים ביד2 ובאתרים אחרים, וכמה ההערכה באפליקציה, כדי לדעת מה מחיר סביר.</li>
+        <li>שואלים בטלפון: למה מוכרים, כמה זמן הרכב אצלם, אם היו תאונות, ואם יש ספר טיפולים.</li>
+      </ul>
+      <a class="cta" href="./">בדיקת רכב לפי מספר רישוי</a>
+    </div>
+  </details>
+
+  <details class="stage">
+    <summary><span class="num">2</span><h2>מסמכים לבקש מהמוכר<small>בלי זה לא מתקדמים</small></h2></summary>
+    <div class="body">
+      <ul class="check">
+        <li><b>רישיון רכב בתוקף,</b> ושהשם בו הוא של מי שמוכר לכם. אם המוכר הוא לא הבעלים, מבקשים ייפוי כוח.</li>
+        <li><b>ספר טיפולים או חשבוניות מהמוסך,</b> כדי לראות שהרכב טופל בזמן.</li>
+        <li><b>אישור העדר תביעות</b> מחברת הביטוח של המוכר. הוא מראה אם היו תביעות על תאונות בשנים האחרונות.</li>
+        <li><b>בדיקת שעבוד</b> ברשם המשכונות. רכב משועבד, למשל לבנק, אי אפשר להעביר על שמכם עד שהשעבוד מוסר.</li>
+        <li>מוודאים שמספר השלדה ברישיון זהה למספר שעל הרכב עצמו.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="stage">
+    <summary><span class="num">3</span><h2>נסיעת מבחן<small>מה לבדוק בעצמכם</small></h2></summary>
+    <div class="body">
+      <ul class="check">
+        <li>מבקשים להתניע כשהמנוע קר. רעשים, עשן או התנעה קשה בולטים יותר במנוע קר.</li>
+        <li>בודקים שאין נורות אזהרה דולקות בלוח המחוונים אחרי ההתנעה.</li>
+        <li>נוסעים גם בעיר וגם בכביש מהיר: מעברי הילוכים חלקים, בלמים בלי רעידות, הגה שלא מושך לצד.</li>
+        <li>בודקים מזגן, חלונות חשמליים, מראות, אורות ומערכת מולטימדיה.</li>
+        <li>מסתכלים על הפחים: מרווחים לא שווים בין חלקים או גוון צבע שונה יכולים להעיד על תיקון אחרי תאונה.</li>
+        <li>בודקים את הצמיגים: עומק החריצים, ושחיקה לא אחידה שיכולה להעיד על בעיית כיוון.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="stage">
+    <summary><span class="num">4</span><h2>בדיקה במכון<small>שווה כל שקל</small></h2></summary>
+    <div class="body">
+      <p>לפני שמשלמים, לוקחים את הרכב לבדיקת קנייה במכון בדיקה מוסמך. הבדיקה עולה כמה מאות שקלים, ויכולה לחסוך עשרות אלפים.</p>
+      <ul class="check">
+        <li>מבקשים בדיקה של שלדה, מנוע, תיבת הילוכים, מתלים ומחשב הרכב.</li>
+        <li>ברכב היברידי או חשמלי מבקשים גם בדיקה של מצב הסוללה.</li>
+        <li>מוכר שמסרב לבדיקה במכון הוא סימן אזהרה.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="stage">
+    <summary><span class="num">5</span><h2>משא ומתן על המחיר<small>להגיע מוכנים</small></h2></summary>
+    <div class="body">
+      <ul class="check">
+        <li>מתחילים מהערכת השווי ומהמודעות של רכבים דומים, לא מהמחיר שהמוכר ביקש.</li>
+        <li>כל ממצא מהמכון הוא סיבה להוריד מחיר, לפי מה שיעלה לתקן.</li>
+        <li>יד גבוהה, עבר ליסינג, קילומטראז׳ גבוה או ריקול פתוח הם סיבות לגיטימיות לבקש הנחה.</li>
+        <li>מחשבים מראש את העלות החודשית, כולל ביטוח, דלק ואגרה, ולא רק את מחיר הקנייה.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="stage">
+    <summary><span class="num">6</span><h2>סגירת העסקה והעברת בעלות<small>הצעדים האחרונים</small></h2></summary>
+    <div class="body">
+      <ul class="check">
+        <li>חותמים על זיכרון דברים: מחיר, מצב הרכב, קילומטראז׳ ותאריך מסירה.</li>
+        <li>משלמים בהעברה בנקאית או בצ׳ק בנקאי, ולא במזומן.</li>
+        <li>מעבירים בעלות יחד עם המוכר, בסניף דואר או באתר משרד התחבורה. כשמתבקשים לדווח על מחיר העסקה, כדאי לדווח: זה עוזר לבנות מחירון אמיתי לכולם.</li>
+        <li>מסדרים ביטוח חובה על שמכם לפני הנסיעה הראשונה.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details class="stage">
+    <summary><span class="num">!</span><h2>סימני אזהרה ועקיצות נפוצות<small>אם משהו מזה קורה, עוצרים</small></h2></summary>
+    <div class="body">
+      <ul class="check warn">
+        <li>המוכר מבקש מקדמה לפני שראיתם את הרכב.</li>
+        <li>המחיר נמוך בהרבה מרכבים דומים, בלי הסבר משכנע.</li>
+        <li>השם ברישיון לא תואם למי שמוכר, ואין ייפוי כוח.</li>
+        <li>הקילומטראז׳ ברכב נמוך מזה שדווח בטסט האחרון.</li>
+        <li>המוכר לחוץ לסגור מהר ולא מאפשר בדיקה במכון.</li>
+      </ul>
+      <p class="note">טיפ: אם משהו מרגיש לא בסדר, עדיף לוותר. תמיד יהיה עוד רכב.</p>
+    </div>
+  </details>
+
+  <p class="foot">המידע כאן כללי ואינו מחליף ייעוץ מקצועי או בדיקה במכון.</p>
+</div></main>
+
+<nav class="bottom-nav" aria-label="תפריט ראשי">
+  <a href="./"><svg viewBox="0 0 24 24"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg><span>דף הבית</span></a>
+  <a href="./#last"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>החיפוש האחרון</span></a>
+  <a href="./#history"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg><span>היסטוריה</span></a>
+  <a href="tips.html" class="on" aria-current="page"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1V17h6v-.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z"/></svg><span>טיפים</span></a>
+</nav>
+<script src="i18n.js"></script>
+</body>
+</html>

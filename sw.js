@@ -1,10 +1,12 @@
 // AutoCars service worker: keeps the app shell available offline.
 // Vehicle data, sign-in and reviews always come from the network.
-const CACHE = "autocars-v1";
+const CACHE = "autocars-v2";
 const SHELL = [
   "./",
   "./index.html",
   "./privacy.html",
+  "./tips.html",
+  "./i18n.js",
   "./manifest.webmanifest",
   "./icon-192.png",
   "./icon-512.png",

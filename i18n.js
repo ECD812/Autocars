@@ -249,6 +249,8 @@
     "התנגשות חזיתית": ["Frontal crash", "Фронтальный удар", "تصادم أمامي", "Choque frontal"],
     "התנגשות צד": ["Side crash", "Боковой удар", "تصادم جانبي", "Choque lateral"],
     "עמידות בהתהפכות": ["Rollover", "Опрокидывание", "مقاومة الانقلاب", "Vuelco"],
+    "אין מבחן לשנת": ["No test for", "Нет теста за", "لا يوجد اختبار لعام", "No hay prueba de"],
+    "לכן מוצג המבחן של": ["so this shows the test from", "показан тест", "لذا يُعرض اختبار عام", "se muestra la de"],
     "לגרסה האמריקאית": ["for the US version", "для версии США", "للنسخة الأمريكية", "para la versión de EE. UU."],
     "לא הצלחתי לטעון תוצאות מבחני ריסוק כרגע": ["Couldn't load crash test results right now", "Не удалось загрузить краш-тесты", "تعذّر تحميل نتائج اختبارات التصادم", "No pude cargar las pruebas de choque"],
     "רמת זיהום": ["Pollution level", "Уровень загрязнения", "مستوى التلوث", "Nivel de contaminación"],

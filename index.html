@@ -648,6 +648,8 @@ html[dir="ltr"] .links a::after { content: "↗"; }
   let ownersChecked = false;
 
   const $ = (s) => document.querySelector(s);
+  // each new report bumps this, so late answers for an earlier car never land in the current report
+  let reportSeq = 0;
   const out = $("#out");
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const svg = {
@@ -1150,7 +1152,7 @@ html[dir="ltr"] .links a::after { content: "↗"; }
   }
 
   // ---------- model photo (Wikipedia) ----------
-  const MAKERS_EN = [["מאזדה","Mazda"],["טויוטה","Toyota"],["יונדאי","Hyundai"],["קיה","Kia"],["סקודה","Skoda"],["פולקסווגן","Volkswagen"],["ניסאן","Nissan"],["מיצובישי","Mitsubishi"],["סוזוקי","Suzuki"],["הונדה","Honda"],["סובארו","Subaru"],["שברולט","Chevrolet"],["פורשה","Porsche"],["פורד","Ford"],["רנו","Renault"],["פיג","Peugeot"],["סיטרואן","Citroen"],["אופל","Opel"],["ב.מ.וו","BMW"],["ב מ וו","BMW"],["במוו","BMW"],["מרצדס","Mercedes-Benz"],["אאודי","Audi"],["וולוו","Volvo"],["סיאט","SEAT"],["קופרה","Cupra"],["דאצ","Dacia"],["פיאט","Fiat"],["לקסוס","Lexus"],["טסלה","Tesla"],["ג'יפ","Jeep"],["גיפ","Jeep"],["בי.ווי.די","BYD"],["בי וואי די","BYD"],["ג'ילי","Geely"],["צ'רי","Chery"],["אם.ג'י","MG"],["אמ.גי","MG"],["לנד רובר","Land Rover"],["מיני","Mini"],["איסוזו","Isuzu"],["דייהטסו","Daihatsu"],["אלפא","Alfa Romeo"],["ג'נסיס","Genesis"],["אינפיניטי","Infiniti"],["סאנגיונג","SsangYong"],["קרייזלר","Chrysler"],["דודג","Dodge"],["קאדילק","Cadillac"],["גרייט וול","Great Wall"],["ליפמוטור","Leapmotor"],["אקספנג","XPeng"],["זיקר","Zeekr"],["ג'אקו","Jaecoo"],["אומודה","Omoda"],["לינק","Lynk & Co"],["פולסטאר","Polestar"],["סמארט","Smart"],["דונגפנג","Dongfeng"],["פוטון","Foton"],["מזראטי","Maserati"],["מאזראטי","Maserati"],["יגואר","Jaguar"],["ג'גואר","Jaguar"],["בנטלי","Bentley"],["פרארי","Ferrari"],["למבורגיני","Lamborghini"],["רולס","Rolls-Royce"],["אסטון","Aston Martin"],["די.אס","DS"],["לינקולן","Lincoln"]];
+  const MAKERS_EN = [["מאזדה","Mazda"],["טויוטה","Toyota"],["יונדאי","Hyundai"],["קיה","Kia"],["סקודה","Skoda"],["פולקסווגן","Volkswagen"],["ניסאן","Nissan"],["מיצובישי","Mitsubishi"],["סוזוקי","Suzuki"],["הונדה","Honda"],["סובארו","Subaru"],["שברולט","Chevrolet"],["פורשה","Porsche"],["פורד","Ford"],["רנו","Renault"],["פיג","Peugeot"],["סיטרואן","Citroen"],["אופל","Opel"],["ב.מ.וו","BMW"],["ב מ וו","BMW"],["במוו","BMW"],["מרצדס","Mercedes-Benz"],["אאודי","Audi"],["וולוו","Volvo"],["סיאט","SEAT"],["קופרה","Cupra"],["דאצ","Dacia"],["פיאט","Fiat"],["לקסוס","Lexus"],["טסלה","Tesla"],["ג'יפ","Jeep"],["גיפ","Jeep"],["בי.ווי.די","BYD"],["בי וואי די","BYD"],["ג'ילי","Geely"],["צ'רי","Chery"],["אם.ג'י","MG"],["אמ.גי","MG"],["לנד רובר","Land Rover"],["מיני","Mini"],["איסוזו","Isuzu"],["דייהטסו","Daihatsu"],["אלפא","Alfa Romeo"],["ג'נסיס","Genesis"],["אינפיניטי","Infiniti"],["סאנגיונג","SsangYong"],["קרייזלר","Chrysler"],["דודג","Dodge"],["קאדילק","Cadillac"],["קדילאק","Cadillac"],["קאדילאק","Cadillac"],["קדילק","Cadillac"],["גרייט וול","Great Wall"],["ליפמוטור","Leapmotor"],["אקספנג","XPeng"],["זיקר","Zeekr"],["ג'אקו","Jaecoo"],["אומודה","Omoda"],["לינק","Lynk & Co"],["פולסטאר","Polestar"],["סמארט","Smart"],["דונגפנג","Dongfeng"],["פוטון","Foton"],["מזראטי","Maserati"],["מאזראטי","Maserati"],["יגואר","Jaguar"],["ג'גואר","Jaguar"],["בנטלי","Bentley"],["פרארי","Ferrari"],["למבורגיני","Lamborghini"],["רולס","Rolls-Royce"],["אסטון","Aston Martin"],["די.אס","DS"],["לינקולן","Lincoln"]];
   const makerEn = (heb) => (MAKERS_EN.find(([h]) => heb.includes(h)) || [, ""])[1];
 
   let photoToken = 0;
@@ -1311,6 +1313,8 @@ html[dir="ltr"] .links a::after { content: "↗"; }
   }
 
   function showReport(digits, rec) {
+    const seq = ++reportSeq;
+    const $ = (s) => seq === reportSeq ? document.querySelector(s) : document.createElement("div");
     const maker = cleanMaker(val(rec, "tozeret_nm"));
     const model = val(rec, "kinuy_mishari") || val(rec, "degem_nm") || "";
     const title = [maker, model].filter(Boolean).join(" ") || "רכב";
@@ -1674,7 +1678,7 @@ html[dir="ltr"] .links a::after { content: "↗"; }
     }).catch(() => { const b = $("#priceChart"); if (b) { b.innerHTML = ""; b.hidden = true; } });
 
     // safety stars + reviews
-    loadSafety(rec);
+    loadSafety(rec, seq);
     currentModel = { key: `${rec.tozeret_cd ?? maker}|${val(rec, "kinuy_mishari") || val(rec, "degem_nm") || ""}`, title, year };
     loadReviews();
 
@@ -1808,31 +1812,48 @@ html[dir="ltr"] .links a::after { content: "↗"; }
 
   // Euro NCAP results (standard equipment) for models common in Israel: [test year, stars]
   const EURO_NCAP = {
-    Toyota: { COROLLA: [[2019,5]], YARIS: [[2020,5]], YARISCROSS: [[2021,5]], CHR: [[2017,5],[2024,5]], RAV4: [[2019,5]], CAMRY: [[2019,5]], PRIUS: [[2016,5]], BZ4X: [[2022,5]] },
-    Hyundai: { I10: [[2020,3]], I20: [[2021,4]], I30: [[2017,5]], BAYON: [[2021,4]], KONA: [[2017,5],[2023,4]], TUCSON: [[2021,5]], SANTAFE: [[2024,5]], IONIQ5: [[2021,5]], IONIQ6: [[2022,5]] },
-    Kia: { PICANTO: [[2017,3]], CEED: [[2019,5]], XCEED: [[2019,5]], NIRO: [[2016,4],[2022,4]], SPORTAGE: [[2022,5]], SORENTO: [[2020,5]], EV6: [[2022,5]], EV9: [[2023,5]] },
-    Mazda: { "2": [[2015,4]], "3": [[2019,5]], CX3: [[2015,4]], CX30: [[2019,5]], CX5: [[2017,5]], CX60: [[2022,5]] },
-    Skoda: { FABIA: [[2021,5]], SCALA: [[2019,5]], OCTAVIA: [[2019,5]], KAMIQ: [[2019,5]], KAROQ: [[2017,5]], KODIAQ: [[2017,5],[2024,5]], SUPERB: [[2015,5],[2024,5]], ENYAQ: [[2021,5]] },
-    Volkswagen: { POLO: [[2017,5]], GOLF: [[2019,5]], TROC: [[2017,5]], TCROSS: [[2019,5]], TIGUAN: [[2016,5],[2024,5]], PASSAT: [[2014,5]], ID3: [[2020,5]], ID4: [[2021,5]] },
-    SEAT: { IBIZA: [[2017,5]], ARONA: [[2017,5]], LEON: [[2020,5]], ATECA: [[2016,5]] },
+    Toyota: { AYGOX: [[2022,4]], YARIS: [[2017,5],[2020,5]], YARISCROSS: [[2021,4]], AURIS: [[2013,5]], COROLLA: [[2019,5]], COROLLACROSS: [[2022,5]], CHR: [[2017,5],[2024,5]], RAV4: [[2019,5]], CAMRY: [[2019,5]], AVENSIS: [[2015,5]], PRIUS: [[2016,5]], HIGHLANDER: [[2021,5]], BZ4X: [[2022,5]] },
+    Hyundai: { I10: [[2020,3]], I20: [[2015,4],[2021,4]], I30: [[2017,5]], BAYON: [[2021,4]], KONA: [[2017,5],[2023,4]], TUCSON: [[2015,5],[2021,5]], SANTAFE: [[2018,5],[2024,5]], IONIQ: [[2016,5]], IONIQ5: [[2021,5]], IONIQ6: [[2022,5]] },
+    Kia: { PICANTO: [[2017,3]], RIO: [[2017,4]], CEED: [[2019,5]], XCEED: [[2019,5]], NIRO: [[2016,4],[2022,4]], SPORTAGE: [[2016,5],[2022,5]], SORENTO: [[2020,5]], STINGER: [[2017,5]], EV3: [[2024,5]], EV6: [[2022,5]], EV9: [[2023,5]] },
+    Mazda: { "2": [[2015,4]], "3": [[2013,5],[2019,5]], "6": [[2018,5]], MX5: [[2015,4]], CX3: [[2015,4]], CX30: [[2019,5]], CX5: [[2012,5],[2017,5],[2025,5]], CX60: [[2022,5]], MX30: [[2020,5]] },
+    Skoda: { FABIA: [[2014,5],[2021,5]], SCALA: [[2019,5]], OCTAVIA: [[2019,5]], KAMIQ: [[2019,5]], KAROQ: [[2017,5]], KODIAQ: [[2017,5],[2024,5]], SUPERB: [[2015,5],[2024,5]], ENYAQ: [[2021,5]] },
+    Volkswagen: { POLO: [[2017,5]], GOLF: [[2012,5],[2019,5]], TROC: [[2017,5]], TCROSS: [[2019,5]], TIGUAN: [[2016,5],[2024,5]], PASSAT: [[2014,5]], TOUAREG: [[2018,5]], TOURAN: [[2015,5]], ID3: [[2020,5]], ID4: [[2021,5]], IDBUZZ: [[2022,5]] },
+    SEAT: { IBIZA: [[2017,5]], ARONA: [[2017,5]], LEON: [[2020,5]], ATECA: [[2016,5]], TARRACO: [[2019,5]] },
     Cupra: { FORMENTOR: [[2021,5]], BORN: [[2021,5]] },
     Suzuki: { SWIFT: [[2017,3],[2024,3]], IGNIS: [[2016,3]], VITARA: [[2015,5]], JIMNY: [[2018,3]] },
-    Mitsubishi: { OUTLANDER: [[2012,5]], ECLIPSECROSS: [[2017,5]] },
-    Nissan: { MICRA: [[2017,4]], JUKE: [[2019,5]], QASHQAI: [[2021,5]], XTRAIL: [[2022,5]], LEAF: [[2018,5]] },
-    Renault: { CLIO: [[2019,5]], CAPTUR: [[2019,5]], ARKANA: [[2021,5]], AUSTRAL: [[2022,5]] },
-    Peugeot: { "208": [[2019,4]], "2008": [[2019,4]], "308": [[2021,4]], "3008": [[2016,5]], "5008": [[2017,5]] },
+    Mitsubishi: { L200: [[2015,4]], OUTLANDER: [[2012,5]], ECLIPSECROSS: [[2017,5]] },
+    Nissan: { MICRA: [[2017,4]], JUKE: [[2019,5]], QASHQAI: [[2014,5],[2021,5]], XTRAIL: [[2022,5]], LEAF: [[2018,5]], ARIYA: [[2022,5]] },
+    Renault: { CLIO: [[2019,5]], CAPTUR: [[2019,5]], KADJAR: [[2015,5]], ARKANA: [[2021,5]], AUSTRAL: [[2022,5]], MEGANEETECH: [[2022,5]], SCENIC: [[2024,5]], ZOE: [[2021,0]] },
+    Peugeot: { "208": [[2019,4]], "2008": [[2019,4]], "308": [[2021,4]], "408": [[2022,4]], "3008": [[2016,5]], "5008": [[2017,5]] },
     Citroen: { C3: [[2017,4]], C3AIRCROSS: [[2017,4]], C4: [[2021,4]], C5AIRCROSS: [[2019,4]] },
     Opel: { CORSA: [[2019,4]], ASTRA: [[2022,4]], MOKKA: [[2021,4]] },
     Dacia: { SANDERO: [[2021,2]], DUSTER: [[2017,3],[2024,3]], JOGGER: [[2021,1]], SPRING: [[2021,1]] },
-    Honda: { JAZZ: [[2020,5]], CIVIC: [[2022,5]], HRV: [[2021,4]], ZRV: [[2023,4]], CRV: [[2024,4]] },
+    Fiat: { "500X": [[2015,4]], "500E": [[2021,4]], PANDACROSS: [[2015,3]], TIPO: [[2016,3]] },
+    "Alfa Romeo": { GIULIA: [[2016,5]], STELVIO: [[2017,5]], TONALE: [[2022,5]] },
+    Honda: { JAZZ: [[2020,5]], CIVIC: [[2022,5]], HRV: [[2021,4]], ZRV: [[2023,4]], CRV: [[2023,5]] },
     BYD: { ATTO3: [[2022,5]], DOLPHIN: [[2023,5]], SEAL: [[2023,5]], SEALU: [[2023,5]] },
     MG: { ZSEV: [[2019,5]], HS: [[2019,5]], MG4: [[2022,5]], "4": [[2022,5]] },
-    Tesla: { MODEL3: [[2019,5]], MODELY: [[2022,5]] },
-    Ford: { FIESTA: [[2017,5]], FOCUS: [[2018,5]], PUMA: [[2019,5]], KUGA: [[2019,5]] },
+    Tesla: { MODEL3: [[2019,5],[2025,5]], MODELY: [[2022,5],[2025,5]] },
+    Ford: { GALAXY: [[2015,5]], SMAX: [[2015,5]], FIESTA: [[2017,5]], FOCUS: [[2018,5]], PUMA: [[2019,5]], KUGA: [[2019,5]] },
     Jeep: { RENEGADE: [[2014,5]], COMPASS: [[2017,5]], AVENGER: [[2023,3]] },
-    Subaru: { XV: [[2017,5]], FORESTER: [[2019,5]], OUTBACK: [[2021,5]] },
-    Lexus: { UX: [[2019,5]], NX: [[2022,5]] },
-    Volvo: { XC40: [[2018,5]], XC60: [[2017,5]], XC90: [[2015,5]], EX30: [[2024,5]] },
+    Subaru: { XV: [[2017,5]], FORESTER: [[2019,5]], OUTBACK: [[2021,5]], SOLTERRA: [[2022,5]] },
+    Lexus: { UX: [[2019,5]], NX: [[2022,5]], ES: [[2018,5]], RX: [[2022,5]] },
+    Volvo: { XC40: [[2018,5]], XC60: [[2017,5]], XC90: [[2015,5]], S60: [[2018,5]], V60: [[2018,5]], EX30: [[2024,5]], EX90: [[2024,5]] },
+    // names with * match any version, e.g. "320I" or "C 200"
+    BMW: { "1*": [[2019,5]], "2ACTIVETOURER*": [[2022,5]], "3*": [[2019,5]], "5*": [[2023,5]], "X1*": [[2022,5]], "IX1*": [[2022,5]], "X3*": [[2017,5]], "X5*": [[2018,5]], "I4*": [[2022,4]], "IX*": [[2021,5]] },
+    "Mercedes-Benz": { "A*": [[2018,5]], "B*": [[2019,5]], "C*": [[2021,5]], "E*": [[2016,5],[2024,5]], "CLA*": [[2019,5]], "GLA*": [[2019,5]], "GLB*": [[2019,5]], "GLC*": [[2022,5]], "GLE*": [[2019,5]], "EQA*": [[2021,5]], "EQB*": [[2021,5]], "EQE*": [[2022,5]], "EQS*": [[2021,5]] },
+    Audi: { "A3*": [[2020,5]], "A4*": [[2015,5]], "A5*": [[2024,5]], "A6*": [[2018,5]], "TT*": [[2015,4]], "Q2*": [[2016,5]], "Q3*": [[2018,5]], "Q4*": [[2021,5]], "Q5*": [[2017,5]], "Q7*": [[2015,5]], "ETRON*": [[2019,5]] },
+    Porsche: { "TAYCAN*": [[2019,5]] },
+    "Land Rover": { "RANGEROVEREVOQUE*": [[2019,5]], "EVOQUE*": [[2019,5]], "RANGEROVERVELAR*": [[2017,5]], "VELAR*": [[2017,5]], "DEFENDER*": [[2020,5]], "DISCOVERYSPORT*": [[2014,5]] },
+    Jaguar: { "EPACE*": [[2017,5]], "FPACE*": [[2017,5]], "IPACE*": [[2018,5]] },
+    Mini: { "COOPER*": [[2014,4]] },
+    Genesis: { "GV60*": [[2022,5]], "GV70*": [[2022,5]], "G80*": [[2022,5]] },
+    Polestar: { "2*": [[2020,5]] },
+    Cadillac: { "LYRIQ*": [[2024,5]] },
+    Zeekr: { "001*": [[2023,5]], "X*": [[2023,5]] },
+    XPeng: { "G9*": [[2023,5]] },
+    "Lynk & Co": { "01*": [[2021,5]] },
+    Smart: { "#1*": [[2022,5]], "1*": [[2022,5]], "#3*": [[2023,5]], "3*": [[2023,5]] },
     Chery: { TIGGO7: [[2025,5]], TIGGO8: [[2025,5]] },
     Omoda: { "5": [[2022,5]], OMODA5: [[2022,5]] },
   };
@@ -1843,11 +1864,12 @@ html[dir="ltr"] .links a::after { content: "↗"; }
     const table = EURO_NCAP[make];
     const kin = val(rec, "kinuy_mishari") || "";
     if (!table || !kin) return null;
-    const full = norm(kin), noMake = norm(kin.replace(new RegExp(make, "i"), ""));
+    const full = norm(kin), noMake = norm(kin.replace(new RegExp(make.replace(/[^A-Za-z ]/g, ""), "i"), ""));
     let hit = null;
     for (const name of [noMake, full]) {
       for (const key of Object.keys(table).sort((a, b) => b.length - a.length)) {
-        if (name.startsWith(key) && NCAP_SUFFIX.includes(name.slice(key.length))) { hit = key; break; }
+        const wild = key.endsWith("*"), k = norm(key.replace("*", ""));
+        if (wild ? name.startsWith(k) && (k.length > 1 || /^\d?$/.test(name.charAt(1))) : (name.startsWith(k) && NCAP_SUFFIX.includes(name.slice(k.length)))) { hit = key; break; }
       }
       if (hit) break;
     }
@@ -1895,28 +1917,49 @@ html[dir="ltr"] .links a::after { content: "↗"; }
   // US government crash tests (NHTSA). Only models also sold in the US are covered.
   async function lookupNHTSA(rec) {
     const make = makerEn(val(rec, "tozeret_nm") || "");
-    const year = val(rec, "shnat_yitzur");
-    const kin = val(rec, "kinuy_mishari") || "";
-    if (!make || !year || !/[A-Za-z0-9]/.test(kin)) return null;
+    const year = Number(val(rec, "shnat_yitzur"));
+    const names = [val(rec, "kinuy_mishari"), val(rec, "degem_nm")].filter((n) => n && /[A-Za-z0-9]/.test(n));
+    if (!make || !year || !names.length) return null;
+    const mk = norm(make), makeRx = new RegExp(make.replace(/[^A-Za-z ]/g, ""), "i");
+    // the forms an Israeli trade name can take in the US list, e.g. "320I" → "3 SERIES", "GLC 300" → "GLC-CLASS"
+    const keys = new Set();
+    for (const n of names) {
+      const k = norm(n.replace(makeRx, ""));
+      if (k.length < 2) continue;
+      keys.add(k); keys.add(mk + k);
+      if (make === "BMW" && /^\d/.test(k)) keys.add(k[0] + "SERIES");
+      const letters = (k.match(/^[A-Z]+/) || [""])[0];
+      if (letters && make === "Mercedes-Benz") { keys.add(letters + "CLASS"); keys.add(letters); }
+    }
+    const pick = (list) => {
+      const ms = list.map((m) => [m, norm(m)]).filter(([, n]) => n.length >= 2);
+      const exact = ms.find(([, n]) => keys.has(n));
+      if (exact) return exact[0];
+      // longest US model name that the Israeli name starts with, e.g. "XT5 PREMIUM" → "XT5"
+      let best = null;
+      for (const [m, n] of ms) for (const k of keys) if (k.startsWith(n) && n.length >= 2 && (!best || n.length > best[1].length)) best = [m, n];
+      return best && best[0];
+    };
     const base = "https://api.nhtsa.gov/SafetyRatings";
-    const models = await anyJSON(`${base}/modelyear/${year}/make/${encodeURIComponent(make)}`);
-    const list = (models?.Results || []).map((m) => m.Model).filter(Boolean);
-    if (!list.length) return null;
-    const k1 = norm(kin), k2 = norm(kin.replace(new RegExp(make, "i"), "")), mk = norm(make);
-    const keys = [k1, k2, mk + k2].filter((k) => k.length >= 2);
-    const model = list.find((m) => keys.includes(norm(m))) || list.find((m) => keys.some((k) => k.length >= 3 && norm(m).startsWith(k)));
-    if (!model) return null;
-    const vars = await anyJSON(`${base}/modelyear/${year}/make/${encodeURIComponent(make)}/model/${encodeURIComponent(model)}`);
-    const vid = vars?.Results?.[0]?.VehicleId;
-    if (!vid) return null;
-    const r = await anyJSON(`${base}/VehicleId/${vid}`);
-    const x = r?.Results?.[0];
-    if (!x) return null;
-    return { desc: x.VehicleDescription, overall: x.OverallRating, front: x.OverallFrontCrashRating, side: x.OverallSideCrashRating, roll: x.RolloverRating };
+    // same model year first, then the years around it (a generation usually spans several years)
+    for (const y of [year, year - 1, year + 1, year - 2]) {
+      const models = await anyJSON(`${base}/modelyear/${y}/make/${encodeURIComponent(make)}`);
+      const model = pick((models?.Results || []).map((m) => m.Model).filter(Boolean));
+      if (!model) continue;
+      const vars = await anyJSON(`${base}/modelyear/${y}/make/${encodeURIComponent(make)}/model/${encodeURIComponent(model)}`);
+      for (const v of (vars?.Results || []).slice(0, 4)) {
+        const r = await anyJSON(`${base}/VehicleId/${v.VehicleId}`);
+        const x = r?.Results?.[0];
+        if (x && parseInt(x.OverallRating, 10) > 0)
+          return { desc: x.VehicleDescription, overall: x.OverallRating, front: x.OverallFrontCrashRating, side: x.OverallSideCrashRating, roll: x.RolloverRating, nearYear: y !== year ? y : null };
+      }
+    }
+    return null;
   }
 
-  function loadSafety(rec) {
+  function loadSafety(rec, seq) {
     lookupNHTSA(rec).then((n) => {
+      if (seq !== reportSeq) return;
       const box = $("#ncapBox"); if (!box) return;
       const num = (v) => { const k = parseInt(v, 10); return Number.isFinite(k) ? k : null; };
       if (!n || num(n.overall) == null) { box.innerHTML = ""; box.hidden = true; return; }
@@ -1926,8 +1969,9 @@ html[dir="ltr"] .links a::after { content: "↗"; }
         <h3>מבחני ריסוק בארה״ב (NHTSA)</h3>
         <div class="safe-big"><b class="num" dir="ltr">${num(n.overall)}<small style="font-size:16px;color:var(--muted)">/5</small></b>${starsHTML(num(n.overall))}</div>
         ${row("התנגשות חזיתית", n.front)}${row("התנגשות צד", n.side)}${row("עמידות בהתהפכות", n.roll)}
-        <p class="foot">לגרסה האמריקאית ${esc(n.desc || "")}.</p>`;
+        <p class="foot">לגרסה האמריקאית ${esc(n.desc || "")}.${n.nearYear ? ` אין מבחן לשנת ${esc(val(rec, "shnat_yitzur"))}, לכן מוצג המבחן של ${n.nearYear}.` : ""}</p>`;
     }).catch(() => {
+      if (seq !== reportSeq) return;
       const box = $("#ncapBox");
       if (box) box.innerHTML = `<p class="foot">לא הצלחתי לטעון תוצאות מבחני ריסוק כרגע.</p>`;
     });
@@ -2220,7 +2264,6 @@ html[dir="ltr"] .links a::after { content: "↗"; }
         </div>
         <div class="cost-checks">
           <label for="cComp"><input id="cComp" type="checkbox" checked>כולל ביטוח מקיף</label>
-          ${value ? `<label for="cDep"><input id="cDep" type="checkbox" checked>כולל ירידת ערך</label>` : ""}
         </div>
       </div>
       <details class="why"><summary>איך זה מחושב?</summary>
@@ -2228,7 +2271,6 @@ html[dir="ltr"] .links a::after { content: "↗"; }
         <p><b>ביטוח:</b> חובה לפי המחשבון של רשות שוק ההון, ומקיף לפי ממוצע שוק ל${comp.name}, לנהג מעל גיל 30.</p>
         <p><b>אגרת רישוי:</b> ${fee ? `קבוצת מחיר ${fee.group}, כולל אגרת רדיו.` : "לא נמצא מחירון, לכן לא נכללה."}</p>
         <p><b>טיפולים ותיקונים:</b> הערכה גסה לפי גיל הרכב. כדאי לעדכן לפי מה שאתם יודעים.</p>
-        ${value ? `<p><b>ירידת ערך:</b> כמה ערך הרכב צפוי לרדת בשנה הקרובה, לפי הערכת השווי.</p>` : ""}
       </details>`;
 
     const COLORS = { fuel: "var(--coral)", ins: "var(--il)", fee: "var(--muted)", maint: "var(--warn)", dep: "var(--line)" };
@@ -2241,7 +2283,6 @@ html[dir="ltr"] .links a::after { content: "↗"; }
         ["fee", "אגרת רישוי", fee ? fee.total / 12 : 0, fee ? `${ils(fee.total)} בשנה` : "אין נתון"],
         ["maint", "טיפולים ותיקונים", num("#cMaint"), "הערכה"],
       ];
-      if (value && $("#cDep")?.checked) rows.push(["dep", "ירידת ערך", value * (age < 1 ? valueEst.curve.first : valueEst.curve.year) / 12, "הערך שהרכב מאבד"]);
       const total = rows.reduce((a, r) => a + r[2], 0);
       $("#costTotal").textContent = ils(Math.round(total / 10) * 10);
       $("#costYear").textContent = `כ-${ils(Math.round(total * 12 / 100) * 100)} בשנה`;

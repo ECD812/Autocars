@@ -1290,9 +1290,8 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
       </section>
 
       <nav class="jump" id="jump" role="tablist" aria-label="חלקי הדוח">
-        <button type="button" role="tab" data-t="secOverview" class="on">סקירה</button>
+        <button type="button" role="tab" data-t="secOverview" class="on">ראשי</button>
         <button type="button" role="tab" data-t="secHistory">היסטוריה</button>
-        <button type="button" role="tab" data-t="secSpec">מפרט</button>
         <button type="button" role="tab" data-t="secSafety">בטיחות</button>
         <button type="button" role="tab" data-t="secPrice">מחיר וביטוח</button>
         <button type="button" role="tab" data-t="secCost">עלות חודשית</button>
@@ -1317,20 +1316,10 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
           <span class="lbl">מנוע</span><span class="big">…</span><span class="note">בודק</span>
         </section>
       </div>
-      <div class="overview-links">
-        <button type="button" class="btn-ghost" data-go="secHistory">היסטוריה ובעלויות</button>
-        <button type="button" class="btn-ghost" data-go="secCost">כמה זה יעלה לי בחודש?</button>
-      </div>
-      </div>
 
-      <section class="card group panel" id="secHistory" data-sec hidden>
-        <h2 class="sec-title">היסטוריה</h2>
+      <section class="card group">
+        <h2 class="sec-title">פרטי הרכב</h2>
         <div class="block" id="ownersCard"><h3>בעלויות</h3><p class="foot">בודק בעלויות…</p></div>
-        <div class="block"><h3>בדיקות</h3><div id="histBox"><p class="foot">בודק במאגרי משרד התחבורה…</p></div></div>
-      </section>
-
-      <section class="card group panel" id="secSpec" data-sec hidden>
-        <h2 class="sec-title">מפרט</h2>
         <div class="block">
           <dl class="kv">${kv(mainRows)}<dt>יבואן</dt><dd id="importerRow">…</dd><dt>מחירון יצרן (חדש)</dt><dd id="priceRow">…</dd></dl>
           ${vin}
@@ -1339,6 +1328,19 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
         <div class="block" id="specCard"><h3>מנוע וצריכת דלק</h3><p class="foot">טוען מפרט…</p></div>
         <div class="block" id="countCard"><h3>כמה יש בישראל</h3><p class="foot">סופר…</p></div>
       </section>
+
+      <div class="overview-links">
+        <button type="button" class="btn-ghost" data-go="secHistory">בדיקות היסטוריה</button>
+        <button type="button" class="btn-ghost" data-go="secCost">כמה זה יעלה לי בחודש?</button>
+      </div>
+      </div>
+
+      <section class="card group panel" id="secHistory" data-sec hidden>
+        <h2 class="sec-title">היסטוריה ובדיקות</h2>
+        <div class="block"><div id="histBox"><p class="foot">בודק במאגרי משרד התחבורה…</p></div></div>
+      </section>
+
+
 
       <section class="card group panel" id="secSafety" data-sec hidden>
         <h2 class="sec-title">בטיחות</h2>

@@ -542,6 +542,10 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .loan-link { justify-self: start; font-weight: 700; font-size: 14px; color: var(--il); text-decoration: none; }
 .loan-link::after { content: " ←"; }
 html[dir="ltr"] .loan-link::after { content: " →"; }
+.loan-months { display: flex; flex-wrap: wrap; gap: 6px; }
+.loan-months button { border: 1px solid var(--line); background: var(--surface-2); color: var(--fg); border-radius: 99px; padding: 6px 14px; font: 600 14px var(--font); }
+.loan-months button.on { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+#loanBox { display: grid; gap: 14px; padding-top: 6px; }
 /* left-to-right languages */
 html[dir="ltr"] .kv dd { text-align: right; }
 html[dir="ltr"] .big-num, html[dir="ltr"] .hchip, html[dir="ltr"] .hchip span, html[dir="ltr"] .h-item,
@@ -1379,6 +1383,7 @@ html[dir="ltr"] .links a::after { content: "↗"; }
         <button type="button" role="tab" data-t="secSafety">בטיחות</button>
         <button type="button" role="tab" data-t="secPrice">מחיר וביטוח</button>
         <button type="button" role="tab" data-t="secCost">עלות חודשית</button>
+        <button type="button" role="tab" data-t="secLoan">הלוואה</button>
         <button type="button" role="tab" data-t="secReviews">תקלות וחוות דעת</button>
       </nav>
 
@@ -1453,6 +1458,11 @@ html[dir="ltr"] .links a::after { content: "↗"; }
       <section class="card group panel" id="secCost" data-sec hidden>
         <h2 class="sec-title">עלות חודשית</h2>
         <div id="costBox"><p class="foot">אוסף נתונים לחישוב…</p></div>
+      </section>
+
+      <section class="card group panel" id="secLoan" data-sec hidden>
+        <h2 class="sec-title">מחשבון הלוואה</h2>
+        <div id="loanBox"><p class="foot">טוען…</p></div>
       </section>
 
       <section class="card group panel" id="secReviews" data-sec hidden>
@@ -1697,6 +1707,13 @@ html[dir="ltr"] .links a::after { content: "↗"; }
     // summary score
     Promise.all([ownersP.catch(() => null), histP.catch(() => null)]).then(([owners, h]) => {
       const box = $("#scoreBox"); if (box) box.innerHTML = scoreHTML(rec, owners, h);
+    });
+
+    // loan calculator, starting from the estimated value (or the list price when there is no estimate)
+    Promise.all([priceP.catch(() => null), valueP.catch(() => null)]).then(([price, valueEst]) => {
+      const box = $("#loanBox"); if (!box) return;
+      const start = valueEst ? valueEst.mid : (price && price.min) || 100000;
+      renderLoan(box, Math.round(start / 1000) * 1000, !!valueEst);
     });
 
     // monthly cost
@@ -2039,6 +2056,47 @@ html[dir="ltr"] .links a::after { content: "↗"; }
       if (seq !== reportSeq) return;
       const box = $("#faultBox"); if (box) box.innerHTML = `<h3>תקלות נפוצות לדגם</h3><p class="foot">לא הצלחתי לטעון תקלות כרגע.</p>`;
     });
+  }
+
+  // Fixed-payment car loan (Spitzer), with an optional balloon repaid at the end.
+  function renderLoan(box, price, fromEstimate) {
+    box.innerHTML = `
+      <div class="cost-total"><span>החזר חודשי</span><b id="lnPay" dir="ltr">—</b><span id="lnSub"></span></div>
+      <div class="cost-inputs">
+        <label for="lnPrice">מחיר הרכב (₪)<input id="lnPrice" type="number" inputmode="numeric" min="0" step="1000" value="${price}"></label>
+        <label for="lnDown">מקדמה (₪)<input id="lnDown" type="number" inputmode="numeric" min="0" step="1000" value="${Math.round(price * 0.2 / 1000) * 1000}"></label>
+        <label for="lnRate">ריבית שנתית (%)<input id="lnRate" type="number" inputmode="decimal" min="0" max="30" step="0.1" value="7.5"></label>
+        <label for="lnBalloon">תשלום בלון בסוף (₪)<input id="lnBalloon" type="number" inputmode="numeric" min="0" step="1000" value="0"></label>
+      </div>
+      <div class="loan-months" role="group" aria-label="מספר תשלומים">${[36, 48, 60, 72, 84, 100].map((m) => `<button type="button" data-m="${m}" class="${m === 60 ? "on" : ""}">${m}</button>`).join("")}</div>
+      <div class="cost-rows">
+        <div class="cost-row"><i style="background:var(--il)"></i><span>סכום ההלוואה</span><b id="lnLoan" dir="ltr"></b></div>
+        <div class="cost-row"><i style="background:var(--warn)"></i><span>סך הריבית</span><b id="lnInt" dir="ltr"></b></div>
+        <div class="cost-row"><i style="background:transparent"></i><span>סך ההחזרים</span><b id="lnTotal" dir="ltr"></b></div>
+        <div class="cost-row"><i style="background:transparent"></i><span>עלות הרכב כולל מקדמה וריבית</span><b id="lnAll" dir="ltr"></b></div>
+      </div>
+      <p class="foot">${fromEstimate ? "המחיר ההתחלתי הוא הערכת השווי של הרכב. אפשר לשנות אותו." : "אפשר לשנות את המחיר לפי מה שהמוכר מבקש."} החישוב להמחשה בלבד ואינו הצעת מימון.</p>
+      <details class="why"><summary>איך זה מחושב?</summary>
+        <p>החישוב לפי לוח שפיצר, שבו ההחזר החודשי קבוע לאורך כל התקופה. בהלוואת בלון משלמים בכל חודש פחות, ובסוף משלמים בבת אחת את סכום הבלון, לכן סך הריבית גבוה יותר.</p>
+      </details>`;
+    let months = 60;
+    const n = (id) => { const v = parseFloat(box.querySelector(id).value); return Number.isFinite(v) && v > 0 ? v : 0; };
+    const set = (id, t) => { box.querySelector(id).textContent = t; };
+    const calc = () => {
+      const pr = n("#lnPrice"), down = Math.min(n("#lnDown"), pr), r = n("#lnRate") / 100 / 12;
+      const loan = Math.max(0, pr - down), balloon = Math.min(n("#lnBalloon"), loan);
+      let pay = 0;
+      if (loan) { if (!r) pay = (loan - balloon) / months; else { const f = Math.pow(1 + r, months); pay = (loan - balloon / f) * r * f / (f - 1); } }
+      const total = pay * months + balloon;
+      set("#lnPay", loan ? ils(Math.round(pay)) : "—");
+      set("#lnSub", loan ? `${months} תשלומים${balloon ? ` ובסוף בלון של ${ils(balloon)}` : ""}` : "אין סכום להלוואה");
+      set("#lnLoan", ils(loan)); set("#lnInt", ils(Math.round(Math.max(0, total - loan))));
+      set("#lnTotal", ils(Math.round(total))); set("#lnAll", ils(Math.round(total + down)));
+      box.querySelectorAll("[data-m]").forEach((b) => b.classList.toggle("on", +b.dataset.m === months));
+    };
+    box.querySelectorAll("input").forEach((i) => i.addEventListener("input", calc));
+    box.querySelectorAll("[data-m]").forEach((b) => b.onclick = () => { months = +b.dataset.m; calc(); });
+    calc();
   }
 
   function loadSafety(rec, seq) {

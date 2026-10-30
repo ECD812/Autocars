@@ -527,6 +527,11 @@
     "מושב בטיחות לילד": ["Child seat", "Детское кресло", "مقعد الطفل", "Silla infantil"],
     "וו גרירה": ["Tow hitch", "Фаркоп", "خطاف السحب", "Enganche"],
     "אחר": ["Other", "Другое", "أخرى", "Otro"],
+    "הלוואה": ["Loan", "Кредит", "القرض", "Préstamo"],
+    "ובסוף בלון של": ["plus a balloon at the end of", "плюс остаточный платёж", "ودفعة بالون في النهاية بقيمة", "más un globo final de"],
+    "המחיר ההתחלתי הוא הערכת השווי של הרכב. אפשר לשנות אותו": ["The starting price is the car's estimated value. You can change it", "Начальная цена — оценка стоимости машины. Её можно изменить", "السعر المبدئي هو القيمة التقديرية للسيارة. يمكنك تغييره", "El precio inicial es el valor estimado del auto. Puedes cambiarlo"],
+    "אפשר לשנות את המחיר לפי מה שהמוכר מבקש": ["Change the price to what the seller is asking", "Укажите цену продавца", "غيّر السعر حسب ما يطلبه البائع", "Cambia el precio al que pide el vendedor"],
+    "החישוב לפי לוח שפיצר, שבו ההחזר החודשי קבוע לאורך כל התקופה. בהלוואת בלון משלמים בכל חודש פחות, ובסוף משלמים בבת אחת את סכום הבלון, לכן סך הריבית גבוה יותר": ["Calculated with a fixed monthly payment. With a balloon you pay less each month and the balloon at the end, so total interest is higher", "Расчёт с фиксированным платежом. С остаточным платежом ежемесячно меньше, но переплата выше", "يُحسب بقسط شهري ثابت. مع البالون تدفع أقل شهريًا والبالون في النهاية، لذا الفائدة الإجمالية أعلى", "Cuota fija mensual. Con globo pagas menos al mes y el globo al final, así que los intereses son mayores"],
     // ---- tips page ----
     "טיפים לקניית רכב יד שנייה": ["Tips for buying a used car", "Советы по покупке б/у машины", "نصائح لشراء سيارة مستعملة", "Consejos para comprar un auto usado"],
     "מה לבדוק, מה לבקש מהמוכר ואיך לסגור עסקה בלי הפתעות": ["What to check, what to ask the seller and how to close the deal without surprises", "Что проверить, что спросить у продавца и как заключить сделку без сюрпризов", "ماذا تفحص وماذا تطلب من البائع وكيف تُتمّ الصفقة دون مفاجآت", "Qué revisar, qué pedir al vendedor y cómo cerrar el trato sin sorpresas"],

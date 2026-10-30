@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>מחשבון הלוואה לרכב · AutoCars</title>
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;800&display=swap">
+<style>
+/* Layout: the answer (monthly payment) on top, the inputs right under it, the breakdown last. */
+:root {
+  --bg: #eef1f6; --surface: #ffffff; --surface-2: #f3f5f9; --fg: #10141b; --muted: #5b6473; --line: #dde2ea;
+  --brand: #e3141b; --il: #1f4fd1; --warn: #c97a00; --plate: #ffcc00;
+  --font: "Rubik", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #0b0e13; --surface: #151a22; --surface-2: #1c222c; --fg: #eef1f6; --muted: #8e98a8; --line: #262d39; --brand: #ff3b3b; --il: #6f95ff; --warn: #f2a93b; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --bg: #0b0e13; --surface: #151a22; --surface-2: #1c222c; --fg: #eef1f6; --muted: #8e98a8; --line: #262d39; --brand: #ff3b3b; --il: #6f95ff; --warn: #f2a93b; color-scheme: dark; }
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--fg); font: 400 16px/1.6 var(--font); padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 96px); }
+header { background: #000; color: #fff; padding-top: env(safe-area-inset-top, 0px); }
+.in { max-width: 720px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header .in { padding-block: 22px 20px; display: grid; gap: 6px; }
+header a { color: #fff; opacity: .75; text-decoration: none; font-size: 14px; justify-self: start; }
+header h1 { margin: 0; font-size: 30px; font-weight: 800; line-height: 1.15; }
+header p { margin: 0; color: #b8c0cc; }
+main .in { padding-block: 18px; display: grid; gap: 12px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 18px; display: grid; gap: 14px; min-width: 0; }
+.result { text-align: center; gap: 4px; }
+.result .lbl { color: var(--muted); font-size: 14px; }
+.result .pay { font-size: 44px; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.result .sub { color: var(--muted); font-size: 14px; }
+.field { display: grid; gap: 6px; }
+.field label { font-weight: 600; font-size: 15px; display: flex; justify-content: space-between; gap: 8px; }
+.field label small { color: var(--muted); font-weight: 400; }
+.field input[type=number] { height: 50px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2); color: var(--fg); padding: 0 14px; font: 700 18px var(--font); direction: ltr; text-align: right; width: 100%; }
+.field input[type=range] { width: 100%; accent-color: var(--il); }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chips button { border: 1px solid var(--line); background: var(--surface-2); color: var(--fg); border-radius: 99px; padding: 6px 12px; font: 600 14px var(--font); }
+.chips button.on { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.rows { display: grid; }
+.row { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.row:last-child { border-bottom: 0; }
+.row span { color: var(--muted); }
+.row b { font-variant-numeric: tabular-nums; }
+.split { display: flex; height: 14px; border-radius: 99px; overflow: hidden; background: var(--surface-2); }
+.split i { display: block; height: 100%; }
+.split .p { background: var(--il); }
+.split .r { background: var(--warn); }
+.legend { display: flex; gap: 16px; font-size: 13px; color: var(--muted); }
+.legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-inline-end: 6px; vertical-align: -1px; background: var(--c); }
+.warn { color: var(--warn); font-size: 14px; font-weight: 600; }
+details.why summary { cursor: pointer; color: var(--muted); font-size: 14px; }
+details.why p { margin: 8px 0 0; font-size: 14px; color: var(--muted); }
+h2 { margin: 0; font-size: 18px; }
+.foot { color: var(--muted); font-size: 13px; text-align: center; margin: 0; }
+:focus-visible { outline: 3px solid #1f4fd1; outline-offset: 2px; }
+.bottom-nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; display: grid; grid-template-columns: repeat(4, 1fr); background: var(--surface); border-top: 1px solid var(--line);
+  padding: 6px max(8px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px)); }
+.bottom-nav a { display: grid; justify-items: center; gap: 3px; padding: 6px 4px; color: var(--muted); font: 600 12px/1.2 var(--font); text-decoration: none; border-radius: 12px; }
+.bottom-nav svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+@media (min-width: 960px) { .bottom-nav { left: 50%; right: auto; bottom: 16px; transform: translateX(-50%); width: 520px; border: 1px solid var(--line); border-radius: 20px; padding: 6px; } }
+html[dir="ltr"] body { text-align: left; }
+html[dir="ltr"] .field input[type=number] { text-align: left; }
+</style>
+</head>
+<body>
+<header><div class="in">
+  <a href="./">→ חזרה ל-AutoCars</a>
+  <h1>מחשבון הלוואה לרכב</h1>
+  <p>כמה תשלמו בחודש, וכמה תעלה ההלוואה בסך הכל.</p>
+</div></header>
+
+<main><div class="in">
+  <section class="card result" aria-live="polite">
+    <span class="lbl">החזר חודשי</span>
+    <span class="pay" id="pay" dir="ltr">—</span>
+    <span class="sub" id="paySub"></span>
+    <span class="warn" id="balloonNote" hidden></span>
+  </section>
+
+  <section class="card">
+    <div class="field">
+      <label for="price">מחיר הרכב (₪)</label>
+      <input id="price" type="number" inputmode="numeric" min="0" step="1000" value="100000">
+    </div>
+    <div class="field">
+      <label for="down">מקדמה (₪) <small id="downPct"></small></label>
+      <input id="down" type="number" inputmode="numeric" min="0" step="1000" value="20000">
+    </div>
+    <div class="field">
+      <label for="rate">ריבית שנתית (%)</label>
+      <input id="rate" type="number" inputmode="decimal" min="0" max="30" step="0.1" value="7.5">
+    </div>
+    <div class="field">
+      <label for="months">מספר תשלומים <small id="monthsLbl"></small></label>
+      <input id="months" type="range" min="12" max="100" step="1" value="60">
+      <div class="chips" id="monthChips">
+        <button type="button" data-m="36">36</button><button type="button" data-m="48">48</button><button type="button" data-m="60">60</button><button type="button" data-m="72">72</button><button type="button" data-m="84">84</button><button type="button" data-m="100">100</button>
+      </div>
+    </div>
+    <div class="field">
+      <label for="balloon">תשלום בלון בסוף (₪) <small>לא חובה</small></label>
+      <input id="balloon" type="number" inputmode="numeric" min="0" step="1000" value="0">
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>פירוט ההלוואה</h2>
+    <div class="split" aria-hidden="true"><i class="p" id="barP"></i><i class="r" id="barR"></i></div>
+    <div class="legend"><span style="--c: var(--il)">קרן</span><span style="--c: var(--warn)">ריבית</span></div>
+    <div class="rows">
+      <div class="row"><span>סכום ההלוואה</span><b id="loan" dir="ltr">—</b></div>
+      <div class="row"><span>סך הריבית</span><b id="interest" dir="ltr">—</b></div>
+      <div class="row"><span>סך ההחזרים</span><b id="totalPaid" dir="ltr">—</b></div>
+      <div class="row"><span>עלות הרכב כולל מקדמה וריבית</span><b id="totalCost" dir="ltr">—</b></div>
+    </div>
+    <details class="why"><summary>איך זה מחושב?</summary>
+      <p>החישוב לפי לוח שפיצר, שבו ההחזר החודשי קבוע לאורך כל התקופה. זה המסלול הנפוץ בהלוואות רכב בישראל.</p>
+      <p>בהלוואת בלון משלמים בכל חודש פחות, ובסוף משלמים בבת אחת את סכום הבלון. על הבלון משלמים ריבית לאורך כל התקופה, לכן סך הריבית גבוה יותר.</p>
+      <p>הריבית בפועל תלויה בבנק או בחברת המימון ובדירוג האשראי שלכם. כדאי לבדוק גם את העמלות ואת הריבית האפקטיבית לפני שחותמים.</p>
+    </details>
+  </section>
+
+  <p class="foot">החישוב להמחשה בלבד ואינו הצעת מימון.</p>
+</div></main>
+
+<nav class="bottom-nav" aria-label="תפריט ראשי">
+  <a href="./"><svg viewBox="0 0 24 24"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg><span>דף הבית</span></a>
+  <a href="./#last"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span>החיפוש האחרון</span></a>
+  <a href="./#history"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg><span>היסטוריה</span></a>
+  <a href="tips.html"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1V17h6v-.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z"/></svg><span>טיפים</span></a>
+</nav>
+
+<script src="i18n.js"></script>
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const ils = (n) => "₪" + Math.round(n).toLocaleString("he-IL");
+  const num = (id) => { const v = parseFloat($(id).value); return Number.isFinite(v) && v > 0 ? v : 0; };
+
+  // a price passed from a car report, e.g. loan.html?price=85000
+  const q = new URLSearchParams(location.search);
+  const given = parseFloat(q.get("price"));
+  if (Number.isFinite(given) && given > 0) {
+    $("price").value = Math.round(given);
+    $("down").value = Math.round(given * 0.2 / 1000) * 1000;
+  }
+
+  function calc() {
+    const price = num("price");
+    const down = Math.min(num("down"), price);
+    const n = Math.round(num("months")) || 60;
+    const r = num("rate") / 100 / 12;
+    const loan = Math.max(0, price - down);
+    const balloon = Math.min(num("balloon"), loan);
+
+    // Spitzer (fixed payment); a balloon is repaid in one go at the end
+    let pay;
+    if (!loan) pay = 0;
+    else if (!r) pay = (loan - balloon) / n;
+    else { const f = Math.pow(1 + r, n); pay = (loan - balloon / f) * r * f / (f - 1); }
+
+    const totalPaid = pay * n + balloon;
+    const interest = Math.max(0, totalPaid - loan);
+
+    $("pay").textContent = loan ? ils(pay) : "—";
+    $("paySub").textContent = loan ? `${n} תשלומים` : "אין סכום להלוואה";
+    const bn = $("balloonNote");
+    bn.hidden = !balloon;
+    if (balloon) bn.textContent = `ובסוף התקופה תשלום בלון של ${ils(balloon)}`;
+    $("downPct").textContent = price ? `${Math.round(down / price * 100)}% מהמחיר` : "";
+    $("monthsLbl").textContent = `${n} חודשים, ${(n / 12).toLocaleString("he-IL", { maximumFractionDigits: 1 })} שנים`;
+    $("loan").textContent = ils(loan);
+    $("interest").textContent = ils(interest);
+    $("totalPaid").textContent = ils(totalPaid);
+    $("totalCost").textContent = ils(totalPaid + down);
+    const all = loan + interest || 1;
+    $("barP").style.width = (loan / all * 100) + "%";
+    $("barR").style.width = (interest / all * 100) + "%";
+    document.querySelectorAll("#monthChips button").forEach((b) => b.classList.toggle("on", +b.dataset.m === n));
+  }
+
+  ["price", "down", "rate", "months", "balloon"].forEach((id) => $(id).addEventListener("input", calc));
+  document.querySelectorAll("#monthChips button").forEach((b) => b.onclick = () => { $("months").value = b.dataset.m; calc(); });
+  calc();
+})();
+</script>
+</body>
+</html>

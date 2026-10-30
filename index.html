@@ -786,27 +786,50 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
   }
   const ils = (n) => "₪" + Number(n).toLocaleString("he-IL");
 
-  // rough value today: list price minus average depreciation, adjusted for owners
-  const DEPRECIATION = (i) => i < 1 ? 0.12 : i < 5 ? 0.08 : 0.06;
-  function estimateValue(newPrice, rec, owners) {
-    const m = String(rec.moed_aliya_lakvish || "").match(/^(\d{4})-(\d{1,2})/);
-    const start = m ? new Date(+m[1], +m[2] - 1, 1) : rec.shnat_yitzur ? new Date(+rec.shnat_yitzur, 6, 1) : null;
-    if (!start || !newPrice) return null;
-    const years = Math.max(0, (Date.now() - start.getTime()) / (365.25 * 864e5));
-    let v = newPrice;
-    const whole = Math.floor(years);
-    for (let i = 0; i < whole; i++) v *= 1 - DEPRECIATION(i);
-    v *= 1 - DEPRECIATION(whole) * (years - whole);
+  // value today, from the car's own list price when new. Calibrated on market prices of common models:
+  // e.g. a 2018 Toyota Corolla (new from ~₪127,700) is listed second-hand at ~₪52–78K, ~₪53.6K on average, in 10.2026.
+  // luxury brands lose value much faster in Israel (e.g. a Maserati Levante is worth roughly a third of its new price after ~8 years)
+  const LUX_FAST = ["Maserati", "Jaguar", "Land Rover", "Alfa Romeo", "Infiniti", "Cadillac", "Lincoln", "BMW", "Mercedes-Benz", "Audi", "Volvo", "DS", "Bentley", "Rolls-Royce", "Aston Martin", "Genesis"];
+  const CURVES = {
+    regular: { first: 0.15, year: 0.09, name: "" },
+    lux:     { first: 0.20, year: 0.13, name: "כמו שקורה לרכבי יוקרה" },
+    ev:      { first: 0.25, year: 0.15, name: "כמו שקורה לרכב חשמלי" },
+  };
+  function depCurve(rec, base) {
+    if (isEv(rec)) return CURVES.ev;
+    const make = makerEn(val(rec, "tozeret_nm") || "");
+    if (LUX_FAST.includes(make) || (base && base > 350000)) return CURVES.lux;
+    return CURVES.regular;
+  }
+  const r500 = (x) => Math.round(x / 500) * 500;
+  function isEv(rec) { const f = val(rec, "sug_delek_nm") || ""; return /חשמל/.test(f) && !/היברי|פלאג/.test(f); }
+
+  function valuation(rec, price, priceHist, owners, h) {
+    const years = carAgeYears(rec);
+    let base = price ? (price.min + price.max) / 2 : null;
+    // no exact list price: use the same model's price for the closest model year
+    if (!base && priceHist && priceHist.length) {
+      const y = Number(val(rec, "shnat_yitzur")) || 0;
+      base = priceHist.reduce((a, b) => Math.abs(b.year - y) < Math.abs(a.year - y) ? b : a).med;
+    }
+    if (years == null || !base) return null;
+    const fromToday = false;
+    const ev = isEv(rec);
+    const curve = depCurve(rec, base);
+    let v = base * (1 - curve.first * Math.min(1, years));
+    if (years > 1) v *= Math.pow(1 - curve.year, years - 1);
     const adj = [];
     const hands = owners && owners.length ? owners.length : null;
-    if (hands > 1) {
-      const f = Math.min(0.15, (hands - 1) * 0.03);
-      v *= 1 - f; adj.push(`יד ${hands}: פחות ${Math.round(f * 100)}%`);
+    if (hands > 2) { const f = Math.min(0.12, (hands - 2) * 0.03); v *= 1 - f; adj.push(`יד ${hands}: פחות ${Math.round(f * 100)}%`); }
+    if (owners && owners.some((o) => /ליסינג|השכרה/.test(o.type))) { v *= 0.95; adj.push("עבר ליסינג או השכרה: פחות 5%"); }
+    const km = mileageOf(h);
+    if (km && years >= 1) {
+      const diff = (km - years * 15000) / 10000;           // every 10,000 km off the norm: about 2.5%
+      const f = Math.max(-0.10, Math.min(0.10, -diff * 0.025));
+      if (Math.abs(f) >= 0.01) { v *= 1 + f; adj.push(`קילומטראז׳ ${f < 0 ? "גבוה" : "נמוך"} מהממוצע: ${f < 0 ? "פחות" : "יותר"} ${Math.round(Math.abs(f) * 100)}%`); }
     }
-    if (owners && owners.some((o) => /ליסינג|השכרה|חברה/.test(o.type))) { v *= 0.95; adj.push("עבר ליסינג, השכרה או חברה: פחות 5%"); }
-    v = Math.max(v, newPrice * 0.08);
-    const r500 = (x) => Math.round(x / 500) * 500;
-    return { low: r500(v * 0.88), high: r500(v * 1.12), years, adj };
+    v = Math.max(v, base * 0.08);
+    return { low: r500(v * 0.92), high: r500(v * 1.08), mid: v, base, fromToday, years, adj, ev, curve };
   }
 
   // ---------- vehicle history (Ministry of Transport) ----------
@@ -815,10 +838,11 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
   const RES_RECALL_CAT = "2c33523f-87aa-44ec-a736-edbb0a82975e";  // קטלוג ריקולים
   const RES_CANCEL = "851ecab1-0622-4dbe-a6c7-f950cf82abf9";      // ביטול סופי
   const RES_PERSONAL = "03adc637-b6fe-402b-9937-7c3d3afc9140";    // יבוא אישי
+  const RES_DISABLED = "c8b9f9c8-4612-4068-934f-d4acd2e3c06e";    // תו חניה לנכה
 
   // look a plate up in a dataset whose plate column name may vary
-  async function byPlate(rid, digits, limit = 20) {
-    for (const field of ["mispar_rechev", "MISPAR_RECHEV"]) {
+  async function byPlate(rid, digits, limit = 20, fields = ["mispar_rechev", "MISPAR_RECHEV"]) {
+    for (const field of fields) {
       try {
         const r = await ds(rid, { filters: { [field]: Number(digits) }, limit });
         return r.records;
@@ -832,9 +856,10 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
   const pickKey = (r, re) => Object.keys(r || {}).find((k) => !k.startsWith("_") && re.test(k) && val(r, k) != null);
 
   async function lookupVehicleHistory(digits) {
-    const [mileage, recalls, cancel, personal] = await Promise.all([
+    const [mileage, recalls, cancel, personal, disabled] = await Promise.all([
       byPlate(RES_MILEAGE, digits, 5), byPlate(RES_RECALL_OPEN, digits, 20),
       byPlate(RES_CANCEL, digits, 1), byPlate(RES_PERSONAL, digits, 1),
+      byPlate(RES_DISABLED, digits, 1, ["MISPAR RECHEV", "mispar_rechev", "MISPAR_RECHEV"]),
     ]);
     // recall descriptions
     let recallItems = null;
@@ -859,7 +884,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
         return { id, text };
       }));
     }
-    return { mileage, recalls, recallItems, cancel, personal };
+    return { mileage, recalls, recallItems, cancel, personal, disabled };
   }
 
   function historyHTML(h, rec) {
@@ -939,7 +964,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
     ev:     { name: "רכב חשמלי", avg: 6900, lo: 5500, hi: 9000 },
     lux:    { name: "רכב יוקרה", avg: 8500, lo: 7000, hi: 11000 },
   };
-  const LUX_MAKES = ["BMW", "Mercedes-Benz", "Audi", "Lexus", "Porsche", "Land Rover", "Genesis", "Volvo", "Cadillac", "Polestar"];
+  const LUX_MAKES = ["BMW", "Mercedes-Benz", "Audi", "Lexus", "Porsche", "Land Rover", "Genesis", "Volvo", "Cadillac", "Polestar", "Maserati", "Jaguar", "Bentley", "Ferrari", "Lamborghini", "Rolls-Royce", "Aston Martin", "Lincoln", "Infiniti", "Alfa Romeo", "DS"];
   function carType(rec, spec, newPrice) {
     const fuel = val(rec, "sug_delek_nm") || "";
     const make = makerEn(val(rec, "tozeret_nm") || "");
@@ -1080,7 +1105,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
   }
 
   // ---------- model photo (Wikipedia) ----------
-  const MAKERS_EN = [["מאזדה","Mazda"],["טויוטה","Toyota"],["יונדאי","Hyundai"],["קיה","Kia"],["סקודה","Skoda"],["פולקסווגן","Volkswagen"],["ניסאן","Nissan"],["מיצובישי","Mitsubishi"],["סוזוקי","Suzuki"],["הונדה","Honda"],["סובארו","Subaru"],["שברולט","Chevrolet"],["פורשה","Porsche"],["פורד","Ford"],["רנו","Renault"],["פיג","Peugeot"],["סיטרואן","Citroen"],["אופל","Opel"],["ב.מ.וו","BMW"],["ב מ וו","BMW"],["במוו","BMW"],["מרצדס","Mercedes-Benz"],["אאודי","Audi"],["וולוו","Volvo"],["סיאט","SEAT"],["קופרה","Cupra"],["דאצ","Dacia"],["פיאט","Fiat"],["לקסוס","Lexus"],["טסלה","Tesla"],["ג'יפ","Jeep"],["גיפ","Jeep"],["בי.ווי.די","BYD"],["בי וואי די","BYD"],["ג'ילי","Geely"],["צ'רי","Chery"],["אם.ג'י","MG"],["אמ.גי","MG"],["לנד רובר","Land Rover"],["מיני","Mini"],["איסוזו","Isuzu"],["דייהטסו","Daihatsu"],["אלפא","Alfa Romeo"],["ג'נסיס","Genesis"],["אינפיניטי","Infiniti"],["סאנגיונג","SsangYong"],["קרייזלר","Chrysler"],["דודג","Dodge"],["קאדילק","Cadillac"],["גרייט וול","Great Wall"],["ליפמוטור","Leapmotor"],["אקספנג","XPeng"],["זיקר","Zeekr"],["ג'אקו","Jaecoo"],["אומודה","Omoda"],["לינק","Lynk & Co"],["פולסטאר","Polestar"],["סמארט","Smart"],["דונגפנג","Dongfeng"],["פוטון","Foton"]];
+  const MAKERS_EN = [["מאזדה","Mazda"],["טויוטה","Toyota"],["יונדאי","Hyundai"],["קיה","Kia"],["סקודה","Skoda"],["פולקסווגן","Volkswagen"],["ניסאן","Nissan"],["מיצובישי","Mitsubishi"],["סוזוקי","Suzuki"],["הונדה","Honda"],["סובארו","Subaru"],["שברולט","Chevrolet"],["פורשה","Porsche"],["פורד","Ford"],["רנו","Renault"],["פיג","Peugeot"],["סיטרואן","Citroen"],["אופל","Opel"],["ב.מ.וו","BMW"],["ב מ וו","BMW"],["במוו","BMW"],["מרצדס","Mercedes-Benz"],["אאודי","Audi"],["וולוו","Volvo"],["סיאט","SEAT"],["קופרה","Cupra"],["דאצ","Dacia"],["פיאט","Fiat"],["לקסוס","Lexus"],["טסלה","Tesla"],["ג'יפ","Jeep"],["גיפ","Jeep"],["בי.ווי.די","BYD"],["בי וואי די","BYD"],["ג'ילי","Geely"],["צ'רי","Chery"],["אם.ג'י","MG"],["אמ.גי","MG"],["לנד רובר","Land Rover"],["מיני","Mini"],["איסוזו","Isuzu"],["דייהטסו","Daihatsu"],["אלפא","Alfa Romeo"],["ג'נסיס","Genesis"],["אינפיניטי","Infiniti"],["סאנגיונג","SsangYong"],["קרייזלר","Chrysler"],["דודג","Dodge"],["קאדילק","Cadillac"],["גרייט וול","Great Wall"],["ליפמוטור","Leapmotor"],["אקספנג","XPeng"],["זיקר","Zeekr"],["ג'אקו","Jaecoo"],["אומודה","Omoda"],["לינק","Lynk & Co"],["פולסטאר","Polestar"],["סמארט","Smart"],["דונגפנג","Dongfeng"],["פוטון","Foton"],["מזראטי","Maserati"],["מאזראטי","Maserati"],["יגואר","Jaguar"],["ג'גואר","Jaguar"],["בנטלי","Bentley"],["פרארי","Ferrari"],["למבורגיני","Lamborghini"],["רולס","Rolls-Royce"],["אסטון","Aston Martin"],["די.אס","DS"],["לינקולן","Lincoln"]];
   const makerEn = (heb) => (MAKERS_EN.find(([h]) => heb.includes(h)) || [, ""])[1];
 
   let photoToken = 0;
@@ -1259,7 +1284,8 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
     showModelPhoto(rec, [title, year].filter(Boolean).join(" "));
 
     const mainRows = [
-      ["יצרן", maker], ["דגם", [val(rec, "degem_nm"), val(rec, "ramat_gimur")].filter(Boolean).join(" · ")],
+      ["יצרן", maker], ["דגם", val(rec, "kinuy_mishari") || val(rec, "degem_nm")],
+      ["תת דגם", val(rec, "ramat_gimur")], ["קוד דגם יצרן", val(rec, "degem_nm")],
       ["שנת ייצור", year], ["עלייה לכביש", rec.moed_aliya_lakvish ? monthYear(rec.moed_aliya_lakvish) : null],
       ["צבע", val(rec, "tzeva_rechev")], ["סוג דלק", val(rec, "sug_delek_nm")], ["בעלות נוכחית", val(rec, "baalut")],
     ].filter(([, v]) => v);
@@ -1321,7 +1347,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
         <h2 class="sec-title">פרטי הרכב</h2>
         <div class="block" id="ownersCard"><h3>בעלויות</h3><p class="foot">בודק בעלויות…</p></div>
         <div class="block">
-          <dl class="kv">${kv(mainRows)}<dt>יבואן</dt><dd id="importerRow">…</dd><dt>מחירון יצרן (חדש)</dt><dd id="priceRow">…</dd></dl>
+          <dl class="kv">${kv(mainRows)}<dt>יבואן</dt><dd id="importerRow">…</dd><dt>תו חניה לנכה</dt><dd id="disabledRow">…</dd><dt>מחירון יצרן (חדש)</dt><dd id="priceRow">…</dd></dl>
           ${vin}
           ${moreRows.length ? `<details class="more"><summary>עוד פרטים</summary><dl class="kv">${kv(moreRows)}</dl></details>` : ""}
         </div>
@@ -1394,6 +1420,10 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
     // ownership
     const ownersP = lookupOwners(digits);
     const priceP = lookupNewPrice(rec);
+    const histP = lookupVehicleHistory(digits);
+    const priceHistP = lookupPriceHistory(rec).catch(() => null);
+    const valueP = Promise.all([priceP.catch(() => null), priceHistP, ownersP.catch(() => null), histP.catch(() => null)])
+      .then(([p, ph, owners, h]) => valuation(rec, p, ph, owners, h));
     ownersP.then((list) => {
       const tile = $("#handTile"); if (!tile) return;
       if (list && list.length) {
@@ -1415,10 +1445,9 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 
     // manufacturer specs + fuel consumption from tests
     const specP = lookupSpecs(rec).catch(() => null);
-    Promise.all([specP, priceP.catch(() => null), ownersP.catch(() => null)]).then(([spec, price, owners]) => {
+    Promise.all([specP, priceP.catch(() => null), valueP.catch(() => null)]).then(([spec, price, value]) => {
       const box = $("#insBox"); if (!box) return;
-      const est = price ? estimateValue((price.min + price.max) / 2, rec, owners) : null;
-      box.innerHTML = insuranceHTML(rec, spec, price, est ? (est.low + est.high) / 2 : null);
+      box.innerHTML = insuranceHTML(rec, spec, price, value ? value.mid : null);
     });
     const epaP = lookupEPA(rec).catch(() => null);
     Promise.all([specP, epaP]).then(([spec, epa]) => {
@@ -1493,10 +1522,23 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
     out.querySelectorAll("[data-go]").forEach((b) => b.onclick = () => showTab(b.dataset.go));
 
     // vehicle history
-    const histP = lookupVehicleHistory(digits);
     histP.then((h) => {
+      const dRow = $("#disabledRow");
+      if (dRow) {
+        if (!h || h.disabled === null) dRow.textContent = "אין נתון";
+        else if (!h.disabled.length) dRow.textContent = "אין";
+        else {
+          const r = h.disabled[0];
+          const k = pickKey(r, /taarich|date|_dt$/i);
+          const d = k ? (fmtDate(val(r, k)) || val(r, k)) : null;
+          dRow.textContent = d ? `יש, הונפק ${d}` : "יש";
+        }
+      }
       const box = $("#histBox"); if (box) box.innerHTML = historyHTML(h, rec);
-    }).catch(() => { const b = $("#histBox"); if (b) b.innerHTML = `<p class="foot">לא הצלחתי לטעון את ההיסטוריה כרגע.</p>`; });
+    }).catch(() => {
+      const b = $("#histBox"); if (b) b.innerHTML = `<p class="foot">לא הצלחתי לטעון את ההיסטוריה כרגע.</p>`;
+      const d = $("#disabledRow"); if (d) d.textContent = "אין נתון";
+    });
 
     // importer list price
     priceP.then((p) => {
@@ -1534,11 +1576,8 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
     });
 
     // estimated value today
-    Promise.all([priceP.catch(() => null), ownersP.catch(() => null)]).then(([p, owners]) => {
+    valueP.then((e) => {
       const box = $("#estValue"); if (!box) return;
-      if (!p) { box.innerHTML = ""; return; }
-      const base = (p.min + p.max) / 2;
-      const e = estimateValue(base, rec, owners);
       if (!e) { box.innerHTML = ""; return; }
       box.innerHTML = `
         <div class="block est">
@@ -1546,14 +1585,15 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
           <div class="big-num" dir="ltr">${ils(e.low)}–${ils(e.high)}</div>
           <p class="foot">הערכה בלבד, לא מחיר שוק.</p>
           <details class="why"><summary>איך זה מחושב?</summary>
-            <p>מחירון חדש של ${ils(Math.round(base))}, גיל ${e.years.toFixed(1)} שנים על הכביש, וירידת ערך ממוצעת: 12% בשנה הראשונה, 8% בשנים 2 עד 5, ו-6% בכל שנה אחר כך.${e.adj.length ? " התאמות: " + e.adj.join(", ") + "." : ""}</p>
-            <p>המחיר בפועל תלוי בקילומטראז׳, במצב הרכב, בתאונות ובביקוש לדגם.</p>
+            <p>נקודת המוצא היא מחירון היצרן של הרכב כשהיה חדש: ${ils(Math.round(e.base / 100) * 100)}.</p>
+            <p>גיל הרכב ${e.years.toFixed(1)} שנים, וירידת ערך ממוצעת של ${Math.round(e.curve.first * 100)}% בשנה הראשונה ו-${Math.round(e.curve.year * 100)}% בכל שנה אחריה${e.curve.name ? ", " + e.curve.name : ""}.${e.adj.length ? " התאמות: " + e.adj.join(", ") + "." : ""}</p>
+            <p>המחיר בפועל תלוי במצב הרכב, בתאונות, ברמת הגימור ובביקוש לדגם.</p>
           </details>
         </div>`;
     });
 
     // list-price history chart
-    lookupPriceHistory(rec).then((pts) => {
+    priceHistP.then((pts) => {
       const box = $("#priceChart"); if (!box) return;
       if (!pts || pts.length < 2) { box.innerHTML = ""; box.hidden = true; return; }
       box.hidden = false;
@@ -1583,9 +1623,9 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
     });
 
     // monthly cost
-    Promise.all([priceP.catch(() => null), ownersP.catch(() => null), specP, epaP]).then(([price, owners, spec, epa]) => {
+    Promise.all([priceP.catch(() => null), valueP.catch(() => null), specP, epaP]).then(([price, valueEst, spec, epa]) => {
       const box = $("#costBox"); if (!box) return;
-      renderCost(box, { rec, price, owners, spec, fuel: fuelOf(spec, epa) });
+      renderCost(box, { rec, price, valueEst, spec, fuel: fuelOf(spec, epa) });
     });
 
     // share
@@ -2092,13 +2132,12 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
   }
 
   function renderCost(box, st) {
-    const { rec, price, owners, spec, fuel } = st;
+    const { rec, price, valueEst, spec, fuel } = st;
     const fuelName = val(rec, "sug_delek_nm") || "";
     const ev = (fuel && fuel.kwh100) || (/חשמל/.test(fuelName) && !/היברי|פלאג/.test(fuelName));
     const age = carAgeYears(rec) || 0;
     const newPrice = price ? (price.min + price.max) / 2 : null;
-    const est = newPrice ? estimateValue(newPrice, rec, owners) : null;
-    const value = est ? (est.low + est.high) / 2 : null;
+    const value = valueEst ? valueEst.mid : null;
     const fee = newPrice ? licenseFee(newPrice, val(rec, "shnat_yitzur")) : null;
     const cc = spec ? Number(val(spec, "nefah_manoa")) || null : null;
     const hovaMid = cc && cc <= 1300 ? 1470 : 1640;
@@ -2141,7 +2180,7 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
         ["fee", "אגרת רישוי", fee ? fee.total / 12 : 0, fee ? `${ils(fee.total)} בשנה` : "אין נתון"],
         ["maint", "טיפולים ותיקונים", num("#cMaint"), "הערכה"],
       ];
-      if (value && $("#cDep")?.checked) rows.push(["dep", "ירידת ערך", value * DEPRECIATION(Math.floor(age)) / 12, "הערך שהרכב מאבד"]);
+      if (value && $("#cDep")?.checked) rows.push(["dep", "ירידת ערך", value * (age < 1 ? valueEst.curve.first : valueEst.curve.year) / 12, "הערך שהרכב מאבד"]);
       const total = rows.reduce((a, r) => a + r[2], 0);
       $("#costTotal").textContent = ils(Math.round(total / 10) * 10);
       $("#costYear").textContent = `כ-${ils(Math.round(total * 12 / 100) * 100)} בשנה`;
@@ -2355,12 +2394,6 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
     openSheet(`
       <h2 id="loginTitle">התחברות</h2>
       ${reason ? `<p>${esc(reason)}</p>` : `<p>שמרו רכבים, כתבו חוות דעת וראו את ההיסטוריה שלכם מכל מכשיר.</p>`}
-      <button class="gbtn" type="button" id="googleBtn">
-        <svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
-        המשך עם Google
-      </button>
-      <span class="msg" id="googleMsg" role="status"></span>
-      <div class="or">או עם אימייל</div>
       <div class="seg" role="tablist">
         <button type="button" class="on" id="tabIn">התחברות</button>
         <button type="button" id="tabUp">הרשמה</button>
@@ -2381,15 +2414,6 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
       $("#loginGo").textContent = m === "in" ? "התחבר" : "צור חשבון";
       $("#pass").autocomplete = m === "in" ? "current-password" : "new-password";
       $("#loginMsg").textContent = "";
-    };
-    $("#googleBtn").onclick = async () => {
-      const m = $("#googleMsg");
-      m.className = "msg"; m.textContent = "מעביר ל-Google…";
-      const { error } = await sb.auth.signInWithOAuth({ provider: "google", options: { redirectTo: location.origin + location.pathname } });
-      if (error) {
-        m.className = "msg no";
-        m.textContent = /not enabled|Unsupported provider/i.test(error.message) ? "ההתחברות עם Google עוד לא הופעלה באתר." : "משהו השתבש: " + error.message;
-      }
     };
     $("#tabIn").onclick = () => setMode("in");
     $("#tabUp").onclick = () => setMode("up");

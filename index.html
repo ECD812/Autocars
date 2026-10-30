@@ -1031,23 +1031,44 @@ html[dir="ltr"] .links a::after { content: "↗"; }
     return "family";
   }
 
-  // mandatory: Capital Market Authority's official calculator, sampled 13.8.2026 for policies from 1.9.2026
-  function insuranceHTML(rec, spec, price, estValue) {
+  // Comprehensive premiums grow with what the car is worth, and faster for brands with costly parts and high theft.
+  // Rates are calibrated so a typical family car lands near the survey average and a Maserati Levante near what owners pay (~₪20K with mandatory).
+  // premium ≈ base + share of the car's value
+  const COMP_RATE = { small: [1500, 0.03], family: [1800, 0.03], suv: [2200, 0.035], ev: [2500, 0.045], lux: [3000, 0.05] };
+  const EXOTIC_MAKES = ["Maserati", "Porsche", "Land Rover", "Jaguar", "Bentley", "Ferrari", "Lamborghini", "Rolls-Royce", "Aston Martin", "Cadillac", "Alfa Romeo"];
+  function compEstimate(rec, spec, newPrice, value) {
+    const type = carType(rec, spec, newPrice);
+    const t = COMP_TYPES[type];
+    const worth = value || (newPrice ? newPrice * 0.6 : null);
+    if (!worth) return { ...t, byValue: false };
+    const exotic = EXOTIC_MAKES.includes(makerEn(val(rec, "tozeret_nm") || ""));
+    const [base, share] = COMP_RATE[type];
+    const avg = Math.round((base + worth * (exotic ? 0.08 : share)) / 100) * 100;
+    return { name: t.name, avg, lo: Math.round(avg * 0.8 / 100) * 100, hi: Math.round(avg * 1.25 / 100) * 100, byValue: true };
+  }
+  // mandatory by engine size. Up to 2,000 cc: Capital Market Authority's official calculator, sampled 13.8.2026.
+  // Above 2,000 cc the tariff is higher; that range is an estimate.
+  function hovaEstimate(spec) {
     const cc = spec ? Number(val(spec, "nefah_manoa")) || null : null;
-    const small = cc && cc <= 1300;
+    if (cc && cc <= 1300) return { lo: 1342, hi: 1878, mid: 1550, label: "עד 1,300 סמ״ק" };
+    if (cc && cc > 2000) return { lo: 1900, hi: 3000, mid: 2400, label: "מעל 2,000 סמ״ק, הערכה" };
+    return { lo: 1396, hi: 1878, mid: 1650, label: "רכב משפחתי" };
+  }
+
+  function insuranceHTML(rec, spec, price, estValue) {
     const newPrice = price ? (price.min + price.max) / 2 : null;
-    const t = COMP_TYPES[carType(rec, spec, newPrice)];
-    const hova = small ? { lo: 1342, hi: 1878, mid: 1550 } : { lo: 1396, hi: 1878, mid: 1650 };
+    const t = compEstimate(rec, spec, newPrice, estValue);
+    const hova = hovaEstimate(spec);
     const range = (a, b) => `<b class="num" dir="ltr">${ils(a)}–${ils(b)}</b>`;
     const lowValue = estValue && estValue < 45000;
     return `<h3>ביטוח לנהג מעל גיל 30</h3>
-      <div class="safe-row"><span>ביטוח חובה<br><small>${small ? "עד 1,300 סמ״ק" : "רכב משפחתי"} · לפי רשות שוק ההון</small></span>${range(hova.lo, hova.hi)}</div>
+      <div class="safe-row"><span>ביטוח חובה<br><small>${hova.label}</small></span>${range(hova.lo, hova.hi)}</div>
       <div class="safe-row"><span>ביטוח מקיף<br><small>${t.name} · ממוצע ${ils(t.avg)}</small></span>${range(t.lo, t.hi)}</div>
       <div class="safe-row" style="font-weight:700"><span style="color:var(--fg)">חובה ומקיף יחד, בערך</span><b class="num" dir="ltr">${ils(hova.lo + t.lo)}–${ils(hova.hi + t.hi)}</b></div>
       ${lowValue ? `<p class="foot">שווי הרכב נמוך. ברכב כזה ביטוח צד ג׳ משתלם בדרך כלל יותר ממקיף.</p>` : ""}
       <details class="why"><summary>מאיפה המספרים?</summary>
-        <p><b>חובה:</b> טווח המחירים של כ-15 חברות ביטוח במחשבון הרשמי של רשות שוק ההון, לנהג בגיל 30 עד 45 ומעלה עם ותק ובלי תאונות. נדגם באוגוסט 2026.</p>
-        <p><b>מקיף:</b> למקיף אין מחיר מפוקח או מפורסם. זה ממוצע שוק לסוג הרכב לפי סקר של סוכנות ביטוח ל-2026. המחיר שלכם יכול להיות שונה מאוד לפי הנהגים, הוותק, האזור והרכב.</p>
+        <p><b>חובה:</b> עד 2,000 סמ״ק, טווח המחירים של כ-15 חברות ביטוח במחשבון הרשמי של רשות שוק ההון, לנהג בגיל 30 עד 45 ומעלה עם ותק ובלי תאונות. נדגם באוגוסט 2026. מנוע גדול יותר מתומחר גבוה יותר, וזו הערכה.</p>
+        <p><b>מקיף:</b> למקיף אין מחיר מפוקח או מפורסם. ${t.byValue ? "ההערכה מחושבת לפי שווי הרכב וסוג הרכב. ברכבי יוקרה עם חלפים יקרים וסיכון גניבה גבוה המקיף יקר יותר." : "זה ממוצע שוק לסוג הרכב לפי סקר של סוכנות ביטוח ל-2026."} המחיר שלכם יכול להיות שונה מאוד לפי הנהגים, הוותק, האזור והרכב.</p>
       </details>`;
   }
 
@@ -2314,9 +2335,8 @@ html[dir="ltr"] .links a::after { content: "↗"; }
     const newPrice = price ? (price.min + price.max) / 2 : null;
     const value = valueEst ? valueEst.mid : null;
     const fee = newPrice ? licenseFee(newPrice, val(rec, "shnat_yitzur")) : null;
-    const cc = spec ? Number(val(spec, "nefah_manoa")) || null : null;
-    const hovaMid = cc && cc <= 1300 ? 1470 : 1640;
-    const comp = COMP_TYPES[carType(rec, spec, newPrice)];
+    const hovaMid = hovaEstimate(spec).mid;
+    const comp = compEstimate(rec, spec, newPrice, value);
     const maintDefault = age < 3 ? 150 : age < 7 ? 250 : 350;
     const effDefault = ev ? (fuel && fuel.kwh100) || 16 : (fuel && fuel.kml) || 14;
 
@@ -2338,7 +2358,7 @@ html[dir="ltr"] .links a::after { content: "↗"; }
       </div>
       <details class="why"><summary>איך זה מחושב?</summary>
         <p><b>${ev ? "חשמל" : "דלק"}:</b> ${fuel ? `צריכה לפי ${fuel.src}` : "צריכה ממוצעת, כי לא נמצא נתון לדגם"}. ${ev ? `מחיר קוט״ש לפי התעריף הביתי מ-1.7.2026.` : `מחיר ליטר בנזין 95 בשירות עצמי מ-1.11.2026. מחיר הדלק משתנה, אפשר לעדכן אותו.`}</p>
-        <p><b>ביטוח:</b> חובה לפי המחשבון של רשות שוק ההון, ומקיף לפי ממוצע שוק ל${comp.name}, לנהג מעל גיל 30.</p>
+        <p><b>ביטוח:</b> חובה לפי המחשבון של רשות שוק ההון, ומקיף ${comp.byValue ? "לפי שווי הרכב וסוג הרכב" : "לפי ממוצע שוק ל" + comp.name}, לנהג מעל גיל 30.</p>
         <p><b>אגרת רישוי:</b> ${fee ? `קבוצת מחיר ${fee.group}, כולל אגרת רדיו.` : "לא נמצא מחירון, לכן לא נכללה."}</p>
         <p><b>טיפולים ותיקונים:</b> הערכה גסה לפי גיל הרכב. כדאי לעדכן לפי מה שאתם יודעים.</p>
       </details>`;

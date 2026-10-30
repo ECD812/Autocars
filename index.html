@@ -541,6 +541,7 @@ html[dir="ltr"] .loan-link::after { content: " →"; }
 .loan-months button { border: 1px solid var(--line); background: var(--surface-2); color: var(--fg); border-radius: 99px; padding: 6px 14px; font: 600 14px var(--font); }
 .loan-months button.on { background: var(--fg); color: var(--bg); border-color: var(--fg); }
 #loanBox { display: grid; gap: 14px; padding-top: 6px; }
+.owners li.dealer { opacity: .6; }
 /* left-to-right languages */
 html[dir="ltr"] .kv dd { text-align: right; }
 html[dir="ltr"] .big-num, html[dir="ltr"] .hchip, html[dir="ltr"] .hchip span, html[dir="ltr"] .h-item,
@@ -807,6 +808,10 @@ html[dir="ltr"] .links a::after { content: "↗"; }
       .sort((a, b) => a.key - b.key);
   }
 
+  // a dealer holding the car between owners is not counted as a hand
+  const isDealer = (o) => /סוחר/.test(o.type || "");
+  const handsOf = (list) => (list || []).filter((o) => !isDealer(o)).length;
+
   async function countSame(rec) {
     const o = { exact: null, family: null };
     if (rec.tozeret_cd == null) return o;
@@ -874,7 +879,7 @@ html[dir="ltr"] .links a::after { content: "↗"; }
     let v = base * (1 - curve.first * Math.min(1, years));
     if (years > 1) v *= Math.pow(1 - curve.year, years - 1);
     const adj = [];
-    const hands = owners && owners.length ? owners.length : null;
+    const hands = owners && owners.length ? handsOf(owners) : null;
     if (hands > 2) { const f = Math.min(0.12, (hands - 2) * 0.03); v *= 1 - f; adj.push(`יד ${hands}: פחות ${Math.round(f * 100)}%`); }
     if (owners && owners.some((o) => /ליסינג|השכרה/.test(o.type))) { v *= 0.95; adj.push("עבר ליסינג או השכרה: פחות 5%"); }
     const km = mileageOf(h);
@@ -1511,10 +1516,15 @@ html[dir="ltr"] .links a::after { content: "↗"; }
     ownersP.then((list) => {
       const tile = $("#handTile"); if (!tile) return;
       if (list && list.length) {
-        tile.innerHTML = `<span class="lbl">יד</span><span class="big">${list.length}</span><span class="note">לפי רשומות הבעלות</span>`;
+        const hands = handsOf(list), dealers = list.length - hands;
+        tile.innerHTML = `<span class="lbl">יד</span><span class="big">${hands || "—"}</span><span class="note">${dealers ? "בלי סוחרים" : "לפי רשומות הבעלות"}</span>`;
         const card = $("#ownersCard");
-        card.innerHTML = `<h3>בעלויות · יד ${list.length}</h3><ol class="owners">${list.map((o, i) =>
-          `<li><span class="hand">יד ${i + 1}</span><span>${esc(o.type)}</span><span class="d">${esc(o.date)}</span></li>`).join("")}</ol>`;
+        let n = 0;
+        card.innerHTML = `<h3>בעלויות · יד ${hands}</h3><ol class="owners">${list.map((o) => {
+          const dealer = isDealer(o);
+          if (!dealer) n++;
+          return `<li${dealer ? ' class="dealer"' : ""}><span class="hand">${dealer ? "—" : `יד ${n}`}</span><span>${esc(o.type)}</span><span class="d">${esc(o.date)}</span></li>`;
+        }).join("")}</ol>${dealers ? `<p class="foot">בעלות של סוחר לא נחשבת כיד.</p>` : ""}`;
       } else {
         tile.innerHTML = `<span class="lbl">יד</span><span class="big">—</span><span class="note">${list ? "אין נתוני בעלות" : "המאגר לא זמין"}</span>`;
         const card = $("#ownersCard");
@@ -2276,9 +2286,9 @@ html[dir="ltr"] .links a::after { content: "↗"; }
     if (h && h.recalls && h.recalls.length) items.push(["warn", h.recalls.length === 1 ? "ריקול פתוח שלא בוצע" : `${h.recalls.length} ריקולים פתוחים שלא בוצעו`]);
     else if (h && h.recalls) items.push(["good", "אין ריקולים פתוחים"]);
     if (owners && owners.length) {
-      const n = owners.length;
+      const n = handsOf(owners);
       if (n >= 4) items.push(["warn", `יד ${n}, הרבה בעלים`]);
-      else if (n <= 2) items.push(["good", `יד ${n}`]);
+      else if (n >= 1 && n <= 2) items.push(["good", `יד ${n}`]);
       if (owners.some((o) => /ליסינג|השכרה/.test(o.type))) items.push(["warn", "עבר ליסינג או השכרה"]);
     }
     const km = mileageOf(h), age = carAgeYears(rec);

@@ -514,8 +514,20 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
     column-gap: 28px; row-gap: 18px;
     padding-block: 24px;
   }
-  .topbar { grid-column: 1 / -1; }
+  /* desktop: big centered logo, language and account at the far side */
+  .topbar { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding-bottom: 8px; }
+  .topbar .logo { grid-column: 2; }
+  .topbar .top-actions { grid-column: 3; justify-self: end; }
+  .brand { height: 96px; max-width: none; border-radius: 18px; }
+  .wrap { grid-template-columns: minmax(400px, 460px) minmax(0, 1fr); }
   .side { position: sticky; top: 24px; align-self: start; }
+  /* a bigger plate search */
+  .plate-field { border-width: 4px; border-radius: 18px; }
+  .plate-field .il { width: 48px; font-size: 14px; padding-bottom: 10px; }
+  .plate-field input { height: 84px; font-size: 40px; }
+  .plate-field input::placeholder { font-size: 28px; }
+  .go { min-width: 112px; border-radius: 18px; font-size: 22px; }
+  .hint { font-size: 14px; }
   .history { flex-wrap: wrap; overflow: visible; }
   #out:empty { display: grid; }
   #out:empty::before {
@@ -542,6 +554,25 @@ html[dir="ltr"] .loan-link::after { content: " →"; }
 .loan-months button.on { background: var(--fg); color: var(--bg); border-color: var(--fg); }
 #loanBox { display: grid; gap: 14px; padding-top: 6px; }
 .owners li.dealer { opacity: .6; }
+
+/* ---------- car news (desktop only) ---------- */
+.news { display: grid; gap: 14px; align-content: start; }
+.news-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.news-head h2 { margin: 0; font-size: 22px; font-weight: 800; }
+.news-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.news-tabs button { border: 1px solid var(--line); background: var(--surface); color: var(--fg); border-radius: 99px; padding: 6px 14px; font: 600 14px var(--font); }
+.news-tabs button.on { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.news-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.news-card { display: grid; gap: 8px; align-content: start; padding: 16px; border-radius: 18px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); text-decoration: none; min-height: 140px; }
+.news-card:hover { border-color: var(--muted); }
+.news-card b { font-size: 16px; line-height: 1.4; font-weight: 700; }
+.news-meta { display: flex; justify-content: space-between; gap: 8px; color: var(--muted); font-size: 13px; }
+.news-src { font-weight: 700; color: var(--coral); }
+@media (max-width: 959px) { #newsBox { display: none !important; } }
+@media (min-width: 960px) {
+  #newsBox { grid-column: 2; }
+  .wrap:has(#newsBox:not([hidden])) #out:empty { display: none; }
+}
 /* left-to-right languages */
 html[dir="ltr"] .kv dd { text-align: right; }
 html[dir="ltr"] .big-num, html[dir="ltr"] .hchip, html[dir="ltr"] .hchip span, html[dir="ltr"] .h-item,
@@ -611,6 +642,14 @@ html[dir="ltr"] .links a::after { content: "↗"; }
   </div>
 
   <div id="out"></div>
+  <section class="news" id="newsBox" hidden aria-labelledby="newsTitle">
+    <div class="news-head">
+      <h2 id="newsTitle">חדשות רכב אחרונות</h2>
+      <div class="news-tabs" role="tablist" id="newsTabs"></div>
+    </div>
+    <div class="news-grid" id="newsGrid"><p class="foot">טוען חדשות…</p></div>
+    <p class="foot">הכותרות נאספות דרך Google News. לחיצה פותחת את הכתבה באתר המקורי.</p>
+  </section>
   <footer class="site-foot"><a href="loan.html">מחשבון הלוואה</a><span>·</span><a href="privacy.html">מדיניות פרטיות</a><span>·</span><span>מידע ממאגרי משרד התחבורה</span></footer>
 </main>
 
@@ -1215,42 +1254,278 @@ html[dir="ltr"] .links a::after { content: "↗"; }
     } catch (_) {}
   }
 
+  // ---------- car news (desktop only) ----------
+  // Headlines from Israeli car sites, via Google News search feeds (the sites themselves have no open feed).
+  const NEWS_SOURCES = [
+    { id: "auto", name: "אוטו", q: "site:auto.co.il" },
+    { id: "icar", name: "iCar", q: "site:icar.co.il" },
+    { id: "gear", name: "גיר", q: "site:gear.co.il" },
+  ];
+  async function anyText(url) {
+    for (const route of ROUTES.slice(1)) {
+      let timer;
+      try {
+        const to = new Promise((_, rej) => { timer = setTimeout(() => rej(new Error("timeout")), 10000); });
+        const res = await Promise.race([fetch(route(url)), to]);
+        if (!res.ok) continue;
+        const t = await res.text();
+        if (t.includes("<rss") || t.includes("<item")) return t;
+      } catch (_) {} finally { clearTimeout(timer); }
+    }
+    return null;
+  }
+  async function loadSourceNews(src) {
+    const url = `https://news.google.com/rss/search?q=${encodeURIComponent(src.q + " when:14d")}&hl=he&gl=IL&ceid=IL:he`;
+    const xml = await anyText(url);
+    if (!xml) return [];
+    const doc = new DOMParser().parseFromString(xml, "text/xml");
+    return [...doc.querySelectorAll("item")].slice(0, 12).map((it) => {
+      const get = (t) => it.querySelector(t)?.textContent?.trim() || "";
+      // titles come as "headline - site name"
+      const title = get("title").replace(/\s+-\s+[^-]+$/, "");
+      return { src: src.id, name: src.name, title, link: get("link"), date: new Date(get("pubDate")) };
+    }).filter((n) => n.title && n.link && /^https:\/\//.test(n.link));
+  }
+  function timeAgo(d) {
+    const h = Math.round((Date.now() - d) / 36e5);
+    if (!Number.isFinite(h)) return "";
+    if (h < 1) return "עכשיו";
+    if (h === 1) return "לפני שעה";
+    if (h < 24) return `לפני ${h} שעות`;
+    const days = Math.round(h / 24);
+    return days === 1 ? "אתמול" : `לפני ${days} ימים`;
+  }
+  let newsItems = [], newsFilter = "all";
+  function paintNews() {
+    const grid = $("#newsGrid"), tabs = $("#newsTabs");
+    const have = NEWS_SOURCES.filter((s) => newsItems.some((n) => n.src === s.id));
+    tabs.innerHTML = [{ id: "all", name: "הכל" }, ...have].map((s) =>
+      `<button type="button" data-src="${s.id}" class="${newsFilter === s.id ? "on" : ""}">${esc(s.name)}</button>`).join("");
+    tabs.querySelectorAll("button").forEach((b) => b.onclick = () => { newsFilter = b.dataset.src; paintNews(); });
+    const list = newsItems.filter((n) => newsFilter === "all" || n.src === newsFilter).slice(0, 12);
+    grid.innerHTML = list.length ? list.map((n) => `
+      <a class="news-card" href="${esc(n.link)}" target="_blank" rel="noopener">
+        <span class="news-meta"><span class="news-src">${esc(n.name)}</span><span>${esc(timeAgo(n.date))}</span></span>
+        <b>${esc(n.title)}</b>
+      </a>`).join("") : `<p class="foot">לא נמצאו חדשות כרגע.</p>`;
+  }
+  async function loadNews() {
+    const box = $("#newsBox");
+    if (!box || !matchMedia("(min-width: 960px)").matches) return;
+    box.hidden = !!out.innerHTML.trim();
+    // keep the news visible only while no report is open
+    new MutationObserver(() => { box.hidden = !!out.innerHTML.trim(); }).observe(out, { childList: true });
+    try {
+      const c = JSON.parse(sessionStorage.getItem("carcheck.news") || "null");
+      if (c && Date.now() - c.at < 30 * 60e3) { newsItems = c.items.map((n) => ({ ...n, date: new Date(n.date) })); paintNews(); return; }
+    } catch (_) {}
+    const all = (await Promise.all(NEWS_SOURCES.map((s) => loadSourceNews(s).catch(() => [])))).flat();
+    newsItems = all.sort((a, b) => b.date - a.date);
+    if (!newsItems.length) { box.remove(); return; }
+    try { sessionStorage.setItem("carcheck.news", JSON.stringify({ at: Date.now(), items: newsItems })); } catch (_) {}
+    paintNews();
+  }
+
   // ---------- OCR ----------
   let worker = null;
   async function getWorker(onProgress) {
     if (worker) return worker;
     worker = await Tesseract.createWorker("eng", 1, { logger: (m) => { if (m.status === "recognizing text") onProgress(m.progress); } });
-    await worker.setParameters({ tessedit_char_whitelist: "0123456789-. ", tessedit_pageseg_mode: "11" });
+    await worker.setParameters({ tessedit_char_whitelist: "0123456789-. ", tessedit_pageseg_mode: "11", user_defined_dpi: "300" });
     return worker;
   }
-  function prepImage(file) {
+  function loadImage(file) {
     return new Promise((resolve, reject) => {
       const img = new Image();
-      img.onload = () => {
-        const s = Math.min(1, 1800 / Math.max(img.width, img.height));
-        const c = document.createElement("canvas");
-        c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
-        const ctx = c.getContext("2d");
-        ctx.drawImage(img, 0, 0, c.width, c.height);
-        const d = ctx.getImageData(0, 0, c.width, c.height), p = d.data;
-        for (let i = 0; i < p.length; i += 4) {
-          let g = 0.3 * p[i] + 0.59 * p[i + 1] + 0.11 * p[i + 2];
-          g = Math.max(0, Math.min(255, (g - 128) * 1.6 + 128));
-          p[i] = p[i + 1] = p[i + 2] = g;
-        }
-        ctx.putImageData(d, 0, 0);
-        resolve(c);
-      };
+      img.onload = () => resolve(img);
       img.onerror = reject;
       img.src = URL.createObjectURL(file);
     });
   }
+  function toCanvas(img, maxSide) {
+    const s = Math.min(1, maxSide / Math.max(img.width, img.height));
+    const c = document.createElement("canvas");
+    c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+    c.getContext("2d", { willReadFrequently: true }).drawImage(img, 0, 0, c.width, c.height);
+    return c;
+  }
+
+  // Israeli plates are yellow with black digits. Find yellow, plate-shaped areas in the photo.
+  function findPlateBoxes(src) {
+    const W = 320, k = W / src.width, H = Math.max(1, Math.round(src.height * k));
+    const c = document.createElement("canvas"); c.width = W; c.height = H;
+    const ctx = c.getContext("2d", { willReadFrequently: true });
+    ctx.drawImage(src, 0, 0, W, H);
+    const p = ctx.getImageData(0, 0, W, H).data;
+    const mask = new Uint8Array(W * H);
+    for (let i = 0; i < W * H; i++) {
+      const r = p[i * 4], g = p[i * 4 + 1], b = p[i * 4 + 2];
+      // yellow: red and green clearly above blue, not too dark
+      if (r > 110 && g > 90 && r - b > 55 && g - b > 40 && Math.abs(r - g) < 90) mask[i] = 1;
+    }
+    // close small gaps left by the digits, so the plate becomes one area
+    const grow = new Uint8Array(W * H);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      if (!mask[y * W + x]) continue;
+      for (let dy = -2; dy <= 2; dy++) for (let dx = -3; dx <= 3; dx++) {
+        const yy = y + dy, xx = x + dx;
+        if (yy >= 0 && yy < H && xx >= 0 && xx < W) grow[yy * W + xx] = 1;
+      }
+    }
+    const seen = new Uint8Array(W * H), boxes = [];
+    for (let i = 0; i < W * H; i++) {
+      if (!grow[i] || seen[i]) continue;
+      let x0 = W, y0 = H, x1 = 0, y1 = 0, n = 0, yel = 0;
+      const stack = [i]; seen[i] = 1;
+      while (stack.length) {
+        const j = stack.pop(), x = j % W, y = (j / W) | 0;
+        n++; if (mask[j]) yel++;
+        if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+        for (const q of [j - 1, j + 1, j - W, j + W]) {
+          if (q < 0 || q >= W * H || seen[q] || !grow[q]) continue;
+          if ((q === j - 1 && x === 0) || (q === j + 1 && x === W - 1)) continue;
+          seen[q] = 1; stack.push(q);
+        }
+      }
+      const bw = x1 - x0 + 1, bh = y1 - y0 + 1, ratio = bw / bh;
+      if (bw < 24 || bh < 6 || ratio < 1.6 || ratio > 7.5) continue;
+      const fill = n / (bw * bh);
+      if (fill < 0.45) continue;
+      boxes.push({ x: x0 / k, y: y0 / k, w: bw / k, h: bh / k, score: n * fill * Math.min(1, ratio / 3.5) });
+    }
+    return boxes.sort((a, b) => b.score - a.score).slice(0, 2);
+  }
+
+  // Crop the plate, scale it up and turn it into clean black digits on white.
+  function plateCrop(src, box) {
+    const padX = box.w * 0.08, padY = box.h * 0.15;
+    const sx = Math.max(0, box.x - padX), sy = Math.max(0, box.y - padY);
+    const sw = Math.min(src.width - sx, box.w + padX * 2), sh = Math.min(src.height - sy, box.h + padY * 2);
+    const scale = 140 / sh;
+    const cw = Math.round(sw * scale), ch = Math.round(sh * scale), m = 24;
+    const c = document.createElement("canvas"); c.width = cw + m * 2; c.height = ch + m * 2;
+    const ctx = c.getContext("2d", { willReadFrequently: true });
+    ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, c.width, c.height);
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(src, sx, sy, sw, sh, m, m, cw, ch);
+    const d = ctx.getImageData(m, m, cw, ch), p = d.data;
+    // yellow → bright, black digits → dark, blue IL strip → dark but removed below
+    const g = new Uint8Array(cw * ch), hist = new Array(256).fill(0);
+    for (let i = 0; i < cw * ch; i++) {
+      // the brightest channel: yellow and red paint are bright in it, black digits are dark in all channels
+      const v = Math.max(p[i * 4], p[i * 4 + 1], p[i * 4 + 2]);
+      g[i] = v; hist[v]++;
+    }
+    const t = otsu(hist, cw * ch);
+    // keep only the yellow area: rows and columns that are mostly yellow (this drops the frame, the IL strip and the car)
+    const yel = (i) => { const r = p[i * 4], gg = p[i * 4 + 1], b = p[i * 4 + 2]; return r > 90 && gg > 70 && r - b > 45 && gg - b > 30; };
+    const rowF = new Float32Array(ch), colF = new Float32Array(cw);
+    for (let y = 0; y < ch; y++) for (let x = 0; x < cw; x++) if (yel(y * cw + x)) { rowF[y]++; colF[x]++; }
+    const span = (arr, len, other) => {
+      let a = 0, b = len - 1;
+      while (a < len && arr[a] / other < 0.3) a++;
+      while (b > a && arr[b] / other < 0.3) b--;
+      return a < b ? [a, b] : [0, len - 1];
+    };
+    const [ry0, ry1] = span(rowF, ch, cw), [cx0, cx1] = span(colF, cw, ch);
+    const ink = new Uint8Array(cw * ch);
+    for (let y = ry0; y <= ry1; y++) for (let x = cx0; x <= cx1; x++) {
+      const i = y * cw + x, r = p[i * 4], gg = p[i * 4 + 1], b = p[i * 4 + 2];
+      const blue = b > r + 30 && b > gg;
+      ink[i] = !blue && g[i] <= t ? 1 : 0;
+    }
+    // dark areas touching the edge are the car body or the plate frame, not digits: clear them
+    const stack = [];
+    for (let x = cx0; x <= cx1; x++) stack.push(ry0 * cw + x, ry1 * cw + x);
+    for (let y = ry0; y <= ry1; y++) stack.push(y * cw + cx0, y * cw + cx1);
+    while (stack.length) {
+      const j = stack.pop();
+      if (!ink[j]) continue;
+      ink[j] = 0;
+      const x = j % cw;
+      if (x > 0) stack.push(j - 1);
+      if (x < cw - 1) stack.push(j + 1);
+      if (j >= cw) stack.push(j - cw);
+      if (j < cw * (ch - 1)) stack.push(j + cw);
+    }
+    let inked = 0;
+    for (let i = 0; i < cw * ch; i++) { p[i * 4] = p[i * 4 + 1] = p[i * 4 + 2] = ink[i] ? 0 : 255; inked += ink[i]; }
+    ctx.putImageData(d, m, m);
+    c.inkShare = inked / (cw * ch);
+    return c;
+  }
+  // a slightly tilted plate reads much better once straightened
+  function rotated(c, deg) {
+    if (!deg) return c;
+    const r = document.createElement("canvas"); r.width = c.width; r.height = c.height;
+    const ctx = r.getContext("2d");
+    ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, r.width, r.height);
+    ctx.translate(r.width / 2, r.height / 2); ctx.rotate(deg * Math.PI / 180);
+    ctx.drawImage(c, -c.width / 2, -c.height / 2);
+    return r;
+  }
+  function otsu(hist, total) {
+    let sum = 0; for (let i = 0; i < 256; i++) sum += i * hist[i];
+    let sumB = 0, wB = 0, best = 0, t = 128;
+    for (let i = 0; i < 256; i++) {
+      wB += hist[i]; if (!wB) continue;
+      const wF = total - wB; if (!wF) break;
+      sumB += i * hist[i];
+      const mB = sumB / wB, mF = (sum - sumB) / wF, between = wB * wF * (mB - mF) ** 2;
+      if (between > best) { best = between; t = i; }
+    }
+    return t;
+  }
+  // whole photo, gray and contrasty: the fallback when no yellow plate is found
+  function wholeImage(src) {
+    const c = toCanvas(src, 1800), ctx = c.getContext("2d", { willReadFrequently: true });
+    const d = ctx.getImageData(0, 0, c.width, c.height), p = d.data;
+    for (let i = 0; i < p.length; i += 4) {
+      let g = 0.3 * p[i] + 0.59 * p[i + 1] + 0.11 * p[i + 2];
+      g = Math.max(0, Math.min(255, (g - 128) * 1.6 + 128));
+      p[i] = p[i + 1] = p[i + 2] = g;
+    }
+    ctx.putImageData(d, 0, 0);
+    return c;
+  }
+
+  // Israeli formats: 12-345-67 (7 digits) and 123-45-678 (8 digits)
   function extractCandidates(text) {
     const found = [];
-    const add = (d) => { if ((d.length === 7 || d.length === 8) && !found.includes(d)) found.push(d); };
-    for (const m of text.matchAll(/\d{2,3}[-\s.]{0,2}\d{2,3}[-\s.]{0,2}\d{2,3}/g)) add(m[0].replace(/\D/g, ""));
-    for (const m of text.matchAll(/\d{7,8}/g)) add(m[0]);
+    const add = (d, strong) => {
+      if (d.length !== 7 && d.length !== 8) return;
+      const f = found.find((x) => x.d === d);
+      if (f) f.score += strong ? 2 : 1; else found.push({ d, score: strong ? 2 : 1 });
+    };
+    for (const m of text.matchAll(/\b\d{2}[-–.\s]{1,2}\d{3}[-–.\s]{1,2}\d{2}\b|\b\d{3}[-–.\s]{1,2}\d{2}[-–.\s]{1,2}\d{3}\b/g)) add(m[0].replace(/\D/g, ""), true);
+    for (const m of text.matchAll(/\d{2,3}[-\s.]{0,2}\d{2,3}[-\s.]{0,2}\d{2,3}/g)) add(m[0].replace(/\D/g, ""), false);
+    for (const m of text.replace(/[^\d\n]/g, "").matchAll(/\d{7,8}/g)) add(m[0], false);
     return found;
+  }
+
+  async function readPlate(file, onProgress) {
+    const img = await loadImage(file);
+    const src = toCanvas(img, 2400);
+    const w = await getWorker(onProgress);
+    const all = new Map();
+    const collect = (text, weight) => { for (const c of extractCandidates(text)) all.set(c.d, (all.get(c.d) || 0) + c.score * weight); };
+    // 1. the yellow plate itself, read as a single line
+    await w.setParameters({ tessedit_pageseg_mode: "7" });
+    for (const box of findPlateBoxes(src)) {
+      const crop = plateCrop(src, box);
+      if (crop.inkShare < 0.03) continue; // a yellow area with no digits on it
+      for (const deg of [0, -4, 4, -8, 8]) {
+        collect((await w.recognize(rotated(crop, deg))).data.text || "", 3);
+        if (all.size) break;
+      }
+      if (all.size) break;
+    }
+    // 2. the whole photo, looking for any text
+    if (!all.size) {
+      await w.setParameters({ tessedit_pageseg_mode: "11" });
+      collect((await w.recognize(wholeImage(src))).data.text || "", 1);
+    }
+    return [...all.entries()].sort((a, b) => b[1] - a[1]).map(([d]) => d);
   }
 
   // ---------- states ----------
@@ -1275,11 +1550,8 @@ html[dir="ltr"] .links a::after { content: "↗"; }
     status("טוען זיהוי טקסט…", 0);
     let candidates = [];
     try {
-      const canvas = await prepImage(file);
-      const w = await getWorker((p) => status("קורא את לוחית הרישוי…", p));
       status("קורא את לוחית הרישוי…", 0);
-      const { data } = await w.recognize(canvas);
-      candidates = extractCandidates(data.text || "");
+      candidates = await readPlate(file, (p) => status("קורא את לוחית הרישוי…", p));
     } catch (e) {
       out.innerHTML = `${snap()}<div class="status err" role="alert"><span>לא הצלחתי לקרוא את התמונה. נסו תמונה אחרת או הקלידו את המספר.</span></div>`;
       return;
@@ -2728,6 +3000,7 @@ html[dir="ltr"] .links a::after { content: "↗"; }
   if (shared) { $("#plateInput").value = fmtPlate(shared[1]); searchCandidates([shared[1]]); }
   else if (location.hash === "#last") { try { history.replaceState(null, "", location.pathname); } catch (_) {} goLast(); }
   else if (location.hash === "#history") { try { history.replaceState(null, "", location.pathname); } catch (_) {} openHistorySheet(); }
+  loadNews();
   if ("serviceWorker" in navigator && location.protocol === "https:") {
     navigator.serviceWorker.register("sw.js").catch(() => {});
   }

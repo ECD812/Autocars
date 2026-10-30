@@ -538,6 +538,15 @@
     "לפי שווי הרכב וסוג הרכב": ["by the car's value and type", "по стоимости и типу машины", "حسب قيمة السيارة ونوعها", "según valor y tipo del auto"],
     "בלי סוחרים": ["not counting dealers", "без дилеров", "دون التجّار", "sin contar concesionarios"],
     "בעלות של סוחר לא נחשבת כיד": ["Dealer ownership isn't counted as an owner", "Владение дилером не считается", "ملكية التاجر لا تُحتسب كمالك", "La propiedad de un concesionario no cuenta como dueño"],
+    "חדשות רכב אחרונות": ["Latest car news", "Последние автоновости", "آخر أخبار السيارات", "Últimas noticias de autos"],
+    "טוען חדשות": ["Loading news", "Загружаем новости", "تحميل الأخبار", "Cargando noticias"],
+    "הכותרות נאספות דרך Google News. לחיצה פותחת את הכתבה באתר המקורי": ["Headlines are gathered via Google News. Tap to open the article on the original site", "Заголовки из Google News. Нажмите, чтобы открыть статью на сайте", "العناوين عبر Google News. اضغط لفتح المقال في الموقع الأصلي", "Titulares vía Google News. Toca para abrir el artículo en el sitio original"],
+    "לא נמצאו חדשות כרגע": ["No news right now", "Новостей пока нет", "لا توجد أخبار حاليًا", "No hay noticias ahora"],
+    "הכל": ["All", "Все", "الكل", "Todo"],
+    "אוטו": ["Auto", "Auto", "أوتو", "Auto"],
+    "גיר": ["Gear", "Gear", "غير", "Gear"],
+    "לפני שעה": ["an hour ago", "час назад", "قبل ساعة", "hace una hora"],
+    "עכשיו": ["just now", "только что", "الآن", "ahora"],
     // ---- tips page ----
     "טיפים לקניית רכב יד שנייה": ["Tips for buying a used car", "Советы по покупке б/у машины", "نصائح لشراء سيارة مستعملة", "Consejos para comprar un auto usado"],
     "מה לבדוק, מה לבקש מהמוכר ואיך לסגור עסקה בלי הפתעות": ["What to check, what to ask the seller and how to close the deal without surprises", "Что проверить, что спросить у продавца и как заключить сделку без сюрпризов", "ماذا تفحص وماذا تطلب من البائع وكيف تُتمّ الصفقة دون مفاجآت", "Qué revisar, qué pedir al vendedor y cómo cerrar el trato sin sorpresas"],
@@ -630,6 +639,7 @@
 
   // sentences with numbers in the middle, where word order changes between languages
   const RULES = [
+    [/לפני (\d+) שעות/g, ["$1 hours ago", "$1 ч. назад", "قبل $1 ساعات", "hace $1 horas"]],
     [/לפני (\d+) ימים/g, ["$1 days ago", "$1 дн. назад", "قبل $1 أيام", "hace $1 días"]],
     [/ירד בכ-(\d+)% מאז שהיה חדש/g, ["Down about $1% since new", "Подешевела примерно на $1% с момента покупки", "انخفضت نحو $1% منذ كانت جديدة", "Bajó cerca de un $1% desde nueva"]],
     [/כ-(₪[\d,]+) בשנה/g, ["about $1 a year", "около $1 в год", "نحو $1 سنويًا", "unos $1 al año"]],

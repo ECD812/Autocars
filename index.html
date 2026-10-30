@@ -640,6 +640,28 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
     const m = String(v).match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
     return m ? `${m[3].padStart(2,"0")}/${m[2].padStart(2,"0")}/${m[1]}` : String(v);
   }
+  // dates arrive in many shapes across the government datasets
+  function anyDate(v) {
+    if (v == null) return null;
+    const t = String(v).trim();
+    let m;
+    if ((m = t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/))) return new Date(+m[1], +m[2] - 1, +m[3]);
+    if ((m = t.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{4})/))) return new Date(+m[3], +m[2] - 1, +m[1]);
+    if ((m = t.match(/^(\d{4})(\d{2})(\d{2})$/))) return new Date(+m[1], +m[2] - 1, +m[3]);           // 20190312
+    if ((m = t.match(/^(\d{4})(\d{2})$/))) return new Date(+m[1], +m[2] - 1, 1);                        // 201903
+    if (/^\d{5}(\.\d+)?$/.test(t)) { const n = +t; if (n > 20000 && n < 80000) return new Date(Date.UTC(1899, 11, 30) + n * 864e5); } // spreadsheet serial
+    if (/^\d{12,13}$/.test(t)) return new Date(+t);                                                       // epoch ms
+    if (/^\d{9,10}$/.test(t)) return new Date(+t * 1000);                                                 // epoch s
+    const d = new Date(t);
+    return isNaN(d) ? null : d;
+  }
+  const showDate = (d) => {
+    if (!d || isNaN(d)) return null;
+    const y = d.getFullYear();
+    if (y < 1950 || y > new Date().getFullYear() + 10) return null;
+    return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${y}`;
+  };
+
   function toDate(v) {
     const m = String(v || "").match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
     return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null;
@@ -1529,9 +1551,12 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
         else if (!h.disabled.length) dRow.textContent = "אין";
         else {
           const r = h.disabled[0];
-          const k = pickKey(r, /taarich|date|_dt$/i);
-          const d = k ? (fmtDate(val(r, k)) || val(r, k)) : null;
-          dRow.textContent = d ? `יש, הונפק ${d}` : "יש";
+          const dateKeys = Object.keys(r).filter((k) => !k.startsWith("_") && /taarich|date|_dt$|_dt\b/i.test(k) && val(r, k) != null);
+          const issueKey = dateKeys.find((k) => /hafak|hanpak|issue|matan|start|hatchala/i.test(k)) || dateKeys.find((k) => !/tokef|sium|ad_|end|expir/i.test(k));
+          const endKey = dateKeys.find((k) => /tokef|sium|end|expir/i.test(k));
+          const issued = issueKey ? showDate(anyDate(val(r, issueKey))) : null;
+          const ends = endKey ? showDate(anyDate(val(r, endKey))) : null;
+          dRow.textContent = ["יש", issued ? `הונפק ${issued}` : null, ends ? `בתוקף עד ${ends}` : null].filter(Boolean).join(" · ");
         }
       }
       const box = $("#histBox"); if (box) box.innerHTML = historyHTML(h, rec);
@@ -1592,25 +1617,38 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
         </div>`;
     });
 
-    // list-price history chart
-    priceHistP.then((pts) => {
+    // value over the years: from the new-car price to today's estimate
+    valueP.then((e) => {
       const box = $("#priceChart"); if (!box) return;
-      if (!pts || pts.length < 2) { box.innerHTML = ""; box.hidden = true; return; }
+      if (!e || e.years < 0.5) { box.innerHTML = ""; box.hidden = true; return; }
       box.hidden = false;
-      const carYear = Number(val(rec, "shnat_yitzur"));
-      const first = pts[0], last = pts[pts.length - 1];
-      const change = Math.round((last.med / first.med - 1) * 100);
+      const valueAt = (t) => {
+        let v = e.base * (1 - e.curve.first * Math.min(1, t));
+        if (t > 1) v *= Math.pow(1 - e.curve.year, t - 1);
+        return v;
+      };
+      const ratio = e.mid / valueAt(e.years);               // owners / mileage adjustments, phased in over time
+      const at = (t) => valueAt(t) * (1 + (ratio - 1) * Math.min(1, t / e.years));
+      const startYear = new Date(Date.now() - e.years * 365.25 * 864e5).getFullYear();
+      const nowYear = new Date().getFullYear();
+      const pts = [];
+      for (let y = startYear; y <= nowYear; y++) {
+        const v = y === startYear ? e.base : y === nowYear ? e.mid : at(Math.min(e.years, y - (nowYear - e.years)));
+        pts.push({ year: y, med: v, min: v, max: v });
+      }
+      const drop = Math.round((1 - e.mid / e.base) * 100);
       box.innerHTML = `
-        <h3>מחירון לפי שנת דגם</h3>
-        <div class="chart-wrap">${priceChartHTML(pts, carYear)}</div>
-        <div class="chart-pick" id="chartPick"><span>${first.year}–${last.year}</span><b>${change >= 0 ? "עלייה" : "ירידה"} של ${Math.abs(change)}% במחירון</b></div>
-        <p class="foot">הנקודה המלאה היא שנת הרכב שלך. לחצו על נקודה כדי לראות את המחיר.</p>`;
+        <h3>שווי הרכב מאז שעלה לכביש</h3>
+        <div class="chart-wrap">${priceChartHTML(pts, nowYear)}</div>
+        <div class="chart-pick" id="chartPick"><span>${startYear}–${nowYear}</span><b>ירד בכ-${drop}% מאז שהיה חדש</b></div>
+        <p class="foot">הנקודה הראשונה היא מחירון היצרן כשהרכב היה חדש, והאחרונה היא הערכת השווי היום. לחצו על נקודה כדי לראות את השווי באותה שנה.</p>`;
       box.querySelectorAll(".dot").forEach((d) => d.addEventListener("click", () => {
         const p = pts.find((x) => String(x.year) === d.dataset.y);
         if (!p) return;
-        $("#chartPick").innerHTML = `<span>דגם ${p.year}</span><b>${p.min === p.max ? ils(p.min) : `${ils(p.min)}–${ils(p.max)}`}</b>`;
+        const label = p.year === startYear ? `${p.year}, חדש` : p.year === nowYear ? `${p.year}, היום` : `${p.year}`;
+        $("#chartPick").innerHTML = `<span>${label}</span><b>${p.year === startYear ? "" : "בערך "}${ils(Math.round(p.med / 500) * 500)}</b>`;
       }));
-    }).catch(() => { const b = $("#priceChart"); if (b) b.innerHTML = ""; });
+    }).catch(() => { const b = $("#priceChart"); if (b) { b.innerHTML = ""; b.hidden = true; } });
 
     // safety stars + reviews
     loadSafety(rec);

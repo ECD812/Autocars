@@ -560,10 +560,7 @@
   const KEY = "carcheck.lang";
   let lang = "he";
   try { lang = localStorage.getItem(KEY) || ""; } catch (_) {}
-  if (!LANGS[lang]) {
-    const n = (navigator.language || "he").slice(0, 2).toLowerCase();
-    lang = LANGS[n] ? n : "he";
-  }
+  if (!LANGS[lang]) lang = "he";
 
   const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const keys = Object.keys(D).sort((a, b) => b.length - a.length);

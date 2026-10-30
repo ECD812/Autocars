@@ -932,66 +932,6 @@ html[dir="ltr"] .links a::after { content: "↗"; }
     return { mileage, recalls, recallItems, cancel, personal, disabled };
   }
 
-  // ---------- mileage history ----------
-  // The ministry only keeps the reading from the latest test, so earlier readings exist only
-  // if this app saw them on an earlier lookup (stored in Supabase, table mileage_log).
-  async function mileageTimeline(digits, rec, h) {
-    const r = h && h.mileage && h.mileage[0];
-    const km = mileageOf(h);
-    const testD = anyDate(val(rec, "mivchan_acharon_dt"));
-    const points = [];
-    const m = String(rec.moed_aliya_lakvish || "").match(/^(\d{4})-(\d{1,2})/);
-    const personal = h && h.personal && h.personal.length;
-    if (m && !personal) points.push({ date: new Date(+m[1], +m[2] - 1, 1), km: 0, label: "עלייה לכביש" });
-    if (sb && km) {
-      try {
-        const { data } = await sb.from("mileage_log").select("km,test_date").eq("plate", digits).order("test_date", { ascending: true });
-        for (const row of data || []) {
-          const d = anyDate(row.test_date);
-          // keep only readings that fit before the current one, so nobody can plant a misleading reading
-          if (d && testD && d < testD && row.km < km && row.km > 0) points.push({ date: d, km: row.km, label: "טסט" });
-        }
-      } catch (_) {}
-      sb.rpc("log_mileage", { p_plate: digits, p_km: Math.round(km), p_test: testD ? testD.toISOString().slice(0, 10) : null }).then(() => {}, () => {});
-    }
-    if (km) points.push({ date: testD || new Date(), km, label: "טסט אחרון" });
-    return points.sort((a, b) => a.date - b.date);
-  }
-
-  function kmChartHTML(pts) {
-    const W = 420, H = 200, L = 52, R = 14, T = 16, B = 28;
-    const t0 = pts[0].date.getTime(), t1 = pts[pts.length - 1].date.getTime();
-    const maxKm = Math.max(...pts.map((p) => p.km)) || 1;
-    const step = niceStep(maxKm, 4), y1 = Math.ceil(maxKm * 1.08 / step) * step;
-    const X = (d) => t1 === t0 ? (L + W - R) / 2 : L + (d.getTime() - t0) / (t1 - t0) * (W - L - R);
-    const Y = (k) => T + (1 - k / y1) * (H - T - B);
-    let grid = "";
-    for (let v = 0; v <= y1 + 1; v += step) grid += `<line class="grid" x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}"/><text class="axis" x="${L - 8}" y="${Y(v) + 4}" text-anchor="end">${v >= 1000 ? Math.round(v / 1000) + "K" : v}</text>`;
-    const line = pts.map((p, i) => `${i ? "L" : "M"}${X(p.date).toFixed(1)},${Y(p.km).toFixed(1)}`).join("");
-    const dots = pts.map((p, i) => `<circle class="dot${i === pts.length - 1 ? " me" : ""}" cx="${X(p.date).toFixed(1)}" cy="${Y(p.km).toFixed(1)}" r="${i === pts.length - 1 ? 6 : 4.5}"><title>${showDate(p.date)}: ${p.km.toLocaleString("he-IL")}</title></circle>`).join("");
-    const years = [...new Set(pts.map((p) => p.date.getFullYear()))];
-    const xt = years.map((y) => { const p = pts.find((q) => q.date.getFullYear() === y); return `<text class="axis" x="${X(p.date)}" y="${H - 8}" text-anchor="middle">${y}</text>`; }).join("");
-    return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="קילומטראז׳ לפי תאריך">${grid}${xt}<path class="line" d="${line}"/>${dots}</svg>`;
-  }
-
-  function kmBlockHTML(pts, rec) {
-    if (!pts.length || !pts.some((p) => p.km > 0)) return "";
-    const last = pts[pts.length - 1];
-    const first = pts[0];
-    const yrs = (last.date - first.date) / (365.25 * 864e5);
-    const perYear = first.km === 0 && yrs >= 1 ? Math.round(last.km / yrs / 100) * 100 : null;
-    const realReadings = pts.filter((p) => p.label !== "עלייה לכביש").length;
-    return `
-      <h3>היסטוריית קילומטראז׳</h3>
-      ${pts.length >= 2 ? `<div class="chart-wrap">${kmChartHTML(pts)}</div>` : ""}
-      <div class="cost-rows">${pts.slice().reverse().map((p) => `
-        <div class="safe-row"><span>${p.label}<br><small dir="ltr">${showDate(p.date) || ""}</small></span><b class="num" dir="ltr">${p.km.toLocaleString("he-IL")} ק״מ</b></div>`).join("")}</div>
-      ${perYear ? `<p class="foot">בממוצע כ-${perYear.toLocaleString("he-IL")} ק״מ בשנה מאז שעלה לכביש.</p>` : ""}
-      <details class="why"><summary>למה יש מעט קריאות?</summary>
-        <p>משרד התחבורה שומר רק את הקילומטראז׳ מהטסט האחרון, וכל טסט חדש מחליף את הקודם. האפליקציה שומרת כל קריאה שהיא רואה, כך שהיסטוריה מלאה נבנית עם הזמן לרכבים שנבדקים שוב בשנים הבאות.${realReadings <= 1 ? " לרכב הזה עדיין יש רק קריאה אחת." : ""}</p>
-      </details>`;
-  }
-
   function historyHTML(h, rec) {
     const row = (state, title, sub) => `<div class="hist-row"><span class="ic ${state}" aria-hidden="true">${state === "ok" ? "✓" : state === "na" ? "?" : "!"}</span><b>${title}</b><span>${sub}</span></div>`;
     const out = [];
@@ -1469,7 +1409,6 @@ html[dir="ltr"] .links a::after { content: "↗"; }
       <section class="card group panel" id="secHistory" data-sec hidden>
         <h2 class="sec-title">היסטוריה ובדיקות</h2>
         <div class="block"><div id="histBox"><p class="foot">בודק במאגרי משרד התחבורה…</p></div></div>
-        <div class="block" id="kmBox" hidden></div>
       </section>
 
 
@@ -1629,11 +1568,6 @@ html[dir="ltr"] .links a::after { content: "↗"; }
 
     // vehicle history
     histP.then((h) => {
-      mileageTimeline(digits, rec, h).then((pts) => {
-        const box = $("#kmBox"); if (!box) return;
-        const html = kmBlockHTML(pts, rec);
-        box.hidden = !html; box.innerHTML = html;
-      });
       const dRow = $("#disabledRow");
       if (dRow) {
         if (!h || h.disabled === null) dRow.textContent = "אין נתון";
